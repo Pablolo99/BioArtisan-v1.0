@@ -1,0 +1,11 @@
+0	coconut_id	smiles	prediction_pathway	prediction_superclass	prediction_class	prediction_glycoside
+0	CNP0000002	CC=C(N=CS)C(=O)OC1C(COC(C)=O)OC(C2(O)CC(=O)C(N)=C(C(=O)O)C2=O)C(O)C1OC1CC(OC)C(O)C(C)O1	Carbohydrates
+1	CNP0000003	COc1cc(C)cc2c1C(=O)OC1C(O)C=CC3c4c(cc(OC)c5c4C(=O)c4c(OC)ccc(OC)c4C5=O)CC31C2O	Polyketides	Polycyclic aromatic polyketides	Anthraquinones and anthrones
+2	CNP0000004	COc1cc(C)cc2c1C(=O)OC1C(O)C=CC3c4c(cc(OC)c5c4C(=O)c4cccc(O)c4C5=O)CC31C2O	Polyketides	Polycyclic aromatic polyketides	Anthraquinones and anthrones
+3	CNP0000005	CC1(C)CC2C(OC(=O)c3ccccc3)C(OC(=O)c3ccccc3)CC(C)(CCOC(=O)C(C)(C)C)C2C1	Terpenoids	Sesquiterpenoids
+4	CNP0000006	COc1cc(C)cc2c1C(=O)OC1C(O)C=CC3c4c(cc(O)c5c4C(=O)c4cccc(O)c4C5=O)CC31C2O	Polyketides	Polycyclic aromatic polyketides	Anthraquinones and anthrones
+5	CNP0000007	CC1OC(=O)C2(C(C)CCC(O)C2O)C1O
+6	CNP0000008	CC(=O)Oc1cc(C)cc2c1C(=O)OC1C(OC(C)=O)C=CC3c4c(cc(OC(C)=O)c5c4C(=O)c4c(OC(C)=O)ccc(OC(C)=O)c4C5=O)CC31C2OC(C)=O	Polyketides	Polycyclic aromatic polyketides	Anthraquinones and anthrones
+7	CNP0000009	CC(=O)OCCC1(C)CC(OC(C)=O)C(OC(C)=O)C2CC(C)(C)CC21	Terpenoids	Sesquiterpenoids	Protoilludane sesquiterpenoids
+8	CNP0000010	CC1(C)CC2C(O)C(=O)CC(C)(CC=O)C2C1	Terpenoids	Sesquiterpenoids	Protoilludane sesquiterpenoids
+9	CNP0000011	COc1cccc2c1C(=O)c1c(OC)cc3c(c1C2=O)C1C=CC(=O)C2(O)C(=O)c4c(OC)cc(C)cc4C(=O)C12C3	Polyketides	Polycyclic aromatic polyketides	Anthraquinones and anthrones

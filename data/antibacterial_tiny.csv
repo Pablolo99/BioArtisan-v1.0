@@ -1,0 +1,11 @@
+mol_id,smiles,antibacterial
+1,Nc1nc2c(ncn2COCCO)c(=O)[nH]1,0
+2,Nc1ncnc2c1ncn2CCOCP(=O)(O)O,0
+3,NC12CC3CC(CC(C3)C1)C2,0
+4,CC1(CO)C(O)CCC2(C)C1CCC1CC3CC12CCC3(O)CO,0
+5,Nc1ccn(CC(CO)OCP(=O)(O)O)c(=O)n1,0
+6,C=C1C(=O)OC2C=C(C)CCC=C(C)CCC12,0
+7,CC(C)Nc1cccnc1N1CCN(C(=O)c2cc3cc(NS(C)(=O)=O)ccc3[nH]2)CC1.CS(=O)(=O)O,0
+8,CC(=O)OCC(CCn1cnc2cnc(N)nc21)COC(C)=O,0
+9,CCOC(=O)C1=CC(OC(CC)CC)C(NC(C)=O)C(N)C1,0
+10,Nc1nc2c(ncn2CCC(CO)CO)c(=O)[nH]1,0
