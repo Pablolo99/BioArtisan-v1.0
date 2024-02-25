@@ -1,7 +1,6 @@
 #!/usr/bin/env pyton3
 
 """
-Hello
 This script is developed in order to crossreference molecular information of two csv files.
 It returns a csv file with additional information of what kind of molecule we have.
 In order to do so, it compares the fingerprints of molecules of two information files.
