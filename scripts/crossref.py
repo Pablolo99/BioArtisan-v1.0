@@ -157,6 +157,7 @@ def main():
     output_path = "C:/Users/pablo/PycharmProjects/TFM/data/new_antibacterial_first10.csv"
     np = "Polyketides"
     """
+
     #Parse command line argument
     args = cli()
     file1 = args.input1
