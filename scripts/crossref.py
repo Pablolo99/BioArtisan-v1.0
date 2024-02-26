@@ -110,9 +110,14 @@ def calculate_tanimoto(fp1, fp2):
 
 def add_np_column(file_path1, file_path2, output_path, np):
     """
-
+    This function adds a new column to a df with crossreferenced information.
+    The original df is a csv file of the donphan db. The information added is
+    within the second file, a csv file original from coconut db
+    :param file_path1: str, path of the donphan db csv file
+    :param file_path2: str, path of the coconut prediction file csv format
+    :param output_path: str, path of the resulting csv file
+    :patam np: name of the class of natural product
     """
-    # Read the first file
     df1 = pd.read_csv(file_path1)
 
     # Extract SMILES and pre-calculate fingerprints for the second file
@@ -133,6 +138,7 @@ def add_np_column(file_path1, file_path2, output_path, np):
         for smiles2, fp2 in fingerprints_dict.items():
             # Calculate Tanimoto similarity using pre-calculated fingerprints
             tanimoto_similarity = calculate_tanimoto(fp2, fp1)
+
             if tanimoto_similarity > 0.99:
                 print(tanimoto_similarity)
                 df1.loc[i, np] = '1'
@@ -140,10 +146,7 @@ def add_np_column(file_path1, file_path2, output_path, np):
 
             df1.loc[i, np] = '0'
 
-
-    print(df1)
-
-    # Save the filtered DataFrame to a new CSV file without an empty line at the end
+    # Save the df in anew CSV file
     df1.to_csv(output_path, index=False)
 
 
