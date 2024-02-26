@@ -112,11 +112,11 @@ def add_np_column(file_path1, file_path2, output_path, np):
     """
     This function adds a new column to a df with crossreferenced information.
     The original df is a csv file of the donphan db. The information added is
-    within the second file, a csv file original from coconut db
+    within the second file, a csv file original from coconut db.
     :param file_path1: str, path of the donphan db csv file
     :param file_path2: str, path of the coconut prediction file csv format
     :param output_path: str, path of the resulting csv file
-    :patam np: name of the class of natural product
+    :patam np: str, name of the class of natural product
     """
     df1 = pd.read_csv(file_path1)
 
@@ -151,12 +151,6 @@ def add_np_column(file_path1, file_path2, output_path, np):
 
 
 def main():
-    """
-    file1 = "C:/Users/pablo/PycharmProjects/TFM/data/antibacterial_tiny.csv"
-    file2 = "C:/Users/pablo/PycharmProjects/TFM/data/coconut_predictions.tsv"
-    output_path = "C:/Users/pablo/PycharmProjects/TFM/data/new_antibacterial_first10.csv"
-    np = "Polyketides"
-    """
 
     #Parse command line argument
     args = cli()
