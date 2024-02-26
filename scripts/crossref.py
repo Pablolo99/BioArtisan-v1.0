@@ -104,10 +104,14 @@ def calculate_tanimoto(fp1, fp2):
     :return: float, Tanimoto index
     """
     tanimoto_similarity = DataStructs.TanimotoSimilarity(fp1, fp2)
+
     return tanimoto_similarity
 
 
 def add_np_column(file_path1, file_path2, output_path, np):
+    """
+
+    """
     # Read the first file
     df1 = pd.read_csv(file_path1)
 
@@ -134,8 +138,8 @@ def add_np_column(file_path1, file_path2, output_path, np):
                 else:
                     df1.at[i, np] = '0'
 
-    # Filter rows where 'np' is '1'
-    filtered_df = df1[df1[np] == '1']
+
+    print(df1)
 
     # Save the filtered DataFrame to a new CSV file without an empty line at the end
     df1.to_csv(output_path, index=False)
