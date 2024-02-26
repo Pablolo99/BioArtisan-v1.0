@@ -130,13 +130,15 @@ def add_np_column(file_path1, file_path2, output_path, np):
     for i, smiles1 in enumerate(df1['smiles']):
         if smiles1 is not None:
             fp1 = calculate_morgan_fingerprint(smiles1)
-            for smiles2, fp2 in fingerprints_dict.items():
-                # Calculate Tanimoto similarity using pre-calculated fingerprints
-                tanimoto_similarity = calculate_tanimoto(fp1, fp2)
-                if tanimoto_similarity > 0.99:
-                    df1.at[i, np] = '1'
-                else:
-                    df1.at[i, np] = '0'
+        for smiles2, fp2 in fingerprints_dict.items():
+            # Calculate Tanimoto similarity using pre-calculated fingerprints
+            tanimoto_similarity = calculate_tanimoto(fp2, fp1)
+            if tanimoto_similarity > 0.99:
+                print(tanimoto_similarity)
+                df1.loc[i, np] = '1'
+                break
+
+            df1.loc[i, np] = '0'
 
 
     print(df1)
