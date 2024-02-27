@@ -131,7 +131,7 @@ def add_np_column(file_path1, file_path2, output_path, np):
             fingerprints_dict[smiles2] = fp2
 
     #Create a new column for np
-    df1[np] = ''
+    #df1[np] = ''
     for i, smiles1 in enumerate(df1['smiles']):
         if smiles1 is not None:
             fp1 = calculate_morgan_fingerprint(smiles1)
@@ -144,7 +144,8 @@ def add_np_column(file_path1, file_path2, output_path, np):
                 break
 
     #drop all the lines that are not recognized
-    df1 = df1[df1[np] != '']
+    df1 = df1.dropna(subset=[np])
+    print(df1)
     df1.to_csv(output_path, index=False)
 
 
