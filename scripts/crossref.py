@@ -120,7 +120,7 @@ def add_np_column(file_path1, file_path2, output_path, np):
     """
     df1 = pd.read_csv(file_path1)
 
-    # Extract SMILES and pre-calculate fingerprints for the second file
+    #extract fingerprints for the second file
     df2 = pd.read_csv(file_path2)
     smiles_list2 = df2['smiles'].tolist()
     fingerprints_dict = {}
@@ -130,24 +130,23 @@ def add_np_column(file_path1, file_path2, output_path, np):
             fp2 = calculate_morgan_fingerprint(smiles2)
             fingerprints_dict[smiles2] = fp2
 
-    # Create a new column for polyketides in the first file
+    #Create a new column for np
     df1[np] = ''
     for i, smiles1 in enumerate(df1['smiles']):
         if smiles1 is not None:
             fp1 = calculate_morgan_fingerprint(smiles1)
         for smiles2, fp2 in fingerprints_dict.items():
-            # Calculate Tanimoto similarity using pre-calculated fingerprints
+            # calculate Tanimoto similarity
             tanimoto_similarity = calculate_tanimoto(fp2, fp1)
 
             if tanimoto_similarity > 0.99:
-                print(tanimoto_similarity)
                 df1.loc[i, np] = '1'
                 break
 
-            df1.loc[i, np] = '0'
-
-    # Save the df in anew CSV file
+    #drop all the lines that are not recognized
+    df1 = df1[df1[np] != '']
     df1.to_csv(output_path, index=False)
+
 
 
 def main():
