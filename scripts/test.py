@@ -27,7 +27,7 @@ extenders = [
     'COC(C(=O)O)C(=O)S',
     'NC(C(=O)O)C(=O)S',
 ]
-starter_subunits = [
+starters = [
     'CC(S)=O',
     'CCC(S)=O'
 ]
@@ -88,7 +88,7 @@ class MCTS:
     Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
     """
 
-    def __init__(self, exploration_weight: int = 1, predict_model: str = predictor_model ) -> None:
+    def __init__(self, exploration_weight: int = 1, predict_model: str = pk_rxn ) -> None:
         """
         Initialize Monte Carlo tree searcher.
 
@@ -99,7 +99,7 @@ class MCTS:
         self.children = dict()  # Children of each node.
         self.exploration_weight = exploration_weight
         self.predict_model = predictor_model # load predictor model
-        self.starter_subunits = starter_subunits
+        self.starter_subunits = starters
     def prediction(self, predict_model) -> float:
         """
         Calculate the predictive value of a molecule using an external predictive model.
@@ -242,12 +242,17 @@ class MCTS:
         return max(self.children[node], key=uct)
 
 
-_MOL = namedtuple("Molecule", "str_mol terminal")
+_MOL = namedtuple("Molecule", "molecule terminal")
 
 class Molecule(_MOL, Node):
     """
     Define a molecule
     """
+    def __int__(self, state = None, is_terminal = None, starter_subunits: List[str] = starters):
+        self.state = state
+        self.is_terminal = is_terminal
+        self.starter_subunits = starters
+        #self.extender_subunits = extenders_subunits
 
     def check_terminal(self) -> None:
         """
@@ -369,12 +374,23 @@ def generate_mol():
     Generate a molecule
     """
     tree = MCTS()
-    mol = new_mol(starter_subunits)
+    mol = new_mol(starters)
     #print(mol.to_pretty_string())
 
     while not mol.is_terminal:
         #while the molecule is not terminal, make extension
         products = mol.make_add()
+
+        if mol.terminal:
+            break
+
+        #train as we go
+        for i in range(100):
+            tree.do_rollout(mol)
+
+        mol = tree.choose(mol)
+        # need to check in which format is mol
+        print(mol)
 
 
 
@@ -385,7 +401,7 @@ def new_mol(starter_subunits: List[str]) -> Molecule:
     :return: Starting state of the molecule
     :rtype: Molecule
     """
-    mol = Molecule(str_mol = None, terminal = False)
+    mol = Molecule(molecule = None, terminal = False)
     #proceed to start the synthesis
     mol.start_synthesis()
     return mol
@@ -396,6 +412,7 @@ def main() -> None:
 
     #generate molecule
     generate_mol()
+
 
 if __name__ == "__main__":
     main()
