@@ -363,25 +363,16 @@ def gen_molecule() -> Molecule:
     mol = new_mol()
 
     while True:
-        # if we have to start just use starters
-        if mol.SMILES is None:
-            mol = mol.make_progress(choice(starters))
-            #print(mol)
-        # if molecule has already started, use extenders
-        if mol.SMILES:
-            mol = mol.make_progress(choice(extenders))
-            #print(mol)
-
         # train as we go, 10 rollouts
-        for i in range(10):
+        for i in range(20):
             tree.do_rollout(mol)
 
-        new = tree.choose(mol)
-        print(new)
-        if new.terminal:
+        mol = tree.choose(mol)
+        print(mol)
+        if mol.terminal:
             break
 
-    return new
+    return mol
 
 
 def main() -> None:
