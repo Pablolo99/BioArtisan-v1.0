@@ -367,7 +367,6 @@ def gen_molecule() -> Molecule:
         if mol.SMILES is None:
             mol = mol.make_progress(choice(starters))
             #print(mol)
-
         # if molecule has already started, use extenders
         if mol.SMILES:
             mol = mol.make_progress(choice(extenders))
