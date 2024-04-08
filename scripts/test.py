@@ -107,7 +107,7 @@ class MCTS:
         :rtype: Node
         """
         if node.is_terminal():
-            raise RuntimeError(f"Choose called on terminal node {node}!")
+            raise RuntimeError(f'Choose called on terminal node {node}!')
 
         if node not in self.children:
             return node.find_random_child()
@@ -287,6 +287,11 @@ class Molecule(_MOL, Node):
     def linear_add(mol, subunit: str) -> str:
         """
         Perform reaction between current molecule and another molecule
+
+        :param mol: Molecule object to perform the linear addition
+        :param subunit: Molecule in SMILES format to add
+        :return: resulting Molecule in SMILES format.
+        :rtype: str
         """
         #if the SMILES is None ( molecule generation has just started )
         if mol.SMILES is None:
@@ -320,14 +325,13 @@ class Molecule(_MOL, Node):
         Return a mol instance with one addition made.
 
         :param Molecule mol: molecule to make move on.
-        :
+        :param subunit: molecule to add to the original molecule (mol)
+        :return: Molecule with new atributes
+        :rtype: Molecule
         """
-        print(mol)
-        print(subunit)
         new_SMILES = mol.linear_add(subunit)
         new_count = mol.num_adds + 1
         new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
-
         #calc the new pred value
         new_pred_value = (new_mol.reward(predictor_model))
 
@@ -357,25 +361,28 @@ def gen_molecule() -> Molecule:
     """
     tree = MCTS()
     mol = new_mol()
-    #print(mol)
 
     while True:
         # if we have to start just use starters
         if mol.SMILES is None:
             mol = mol.make_progress(choice(starters))
+            #print(mol)
+
         # if molecule has already started, use extenders
         if mol.SMILES:
             mol = mol.make_progress(choice(extenders))
+            #print(mol)
 
+        # train as we go, 10 rollouts
         for i in range(10):
             tree.do_rollout(mol)
 
-        mol = tree.choose(mol)
-
-        if mol.terminal:
+        new = tree.choose(mol)
+        print(new)
+        if new.terminal:
             break
 
-    return mol
+    return new
 
 
 def main() -> None:
@@ -384,7 +391,7 @@ def main() -> None:
 
     # Generate molecule
     mol = gen_molecule()
-    print(mol)
+    #print(mol)
 
 if __name__ == "__main__":
     main()
