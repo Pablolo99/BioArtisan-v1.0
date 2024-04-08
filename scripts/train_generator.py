@@ -311,7 +311,9 @@ class TicTacToeBoard(_TTTB, Node):
         """
         tup = board.tup[:index] + (board.turn,) + board.tup[index + 1 :]
         turn = not board.turn
+        #print(turn)
         winner = _find_winner(tup)
+        #print(winner)
         is_terminal = (winner is not None) or not any(v is None for v in tup)
 
         return TicTacToeBoard(tup, turn, winner, is_terminal)
@@ -349,6 +351,7 @@ def play_game():
             raise RuntimeError("Invalid move")
         
         board = board.make_move(index)
+        print(board.tup)
         print(board.to_pretty_string())
 
         if board.terminal:
