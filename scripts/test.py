@@ -6,10 +6,9 @@ from rdkit.Chem import MolFromSmiles, MolToSmiles
 import math
 import typing as ty
 from abc import ABC, abstractmethod
+from random import choice
 from typing import List
 from collections import defaultdict, namedtuple
-from random import choice
-import numpy as np
 
 # Load the predictor model
 predictor_model = joblib.load("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/scripts/model.pkl")
@@ -34,7 +33,7 @@ starters = [
 
 class Node(ABC):
     """
-    A representation of a single molecule state. MCTS works by constructing a tree of these Nodes.
+    A representation of a single board state. MCTS works by constructing a tree of these Nodes.
 
     Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
     """
@@ -48,7 +47,7 @@ class Node(ABC):
     @abstractmethod
     def find_random_child(self) -> ty.Optional["Node"]:
         """
-        Random successor of this molecule state (for more efficient simulation)
+        Random successor of this board state (for more efficient simulation)
         """
         return Node
 
@@ -62,7 +61,7 @@ class Node(ABC):
     @abstractmethod
     def reward(self) -> float:
         """
-        Assumes `self` is terminal node.
+        Assumes `self` is terminal node. 1=win, 0=loss, .5=tie, etc.
         """
         return 0.0
 
@@ -88,7 +87,7 @@ class MCTS:
     Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
     """
 
-    def __init__(self, exploration_weight: int = 1, predict_model: str = pk_rxn ) -> None:
+    def __init__(self, exploration_weight: int = 1) -> None:
         """
         Initialize Monte Carlo tree searcher.
 
@@ -98,26 +97,6 @@ class MCTS:
         self.N = defaultdict(int)  # Total visit count for each node.
         self.children = dict()  # Children of each node.
         self.exploration_weight = exploration_weight
-        self.predict_model = predictor_model # load predictor model
-        self.starter_subunits = starters
-    def prediction(self, predict_model) -> float:
-        """
-        Calculate the predictive value of a molecule using an external predictive model.
-
-        :param predict_model: External predictive model.
-        :return: Predictive value for the molecule.
-        :rtype: float
-        """
-        if self.is_terminal:
-            raise RuntimeError("Reward called on nonterminal molecule!")
-        # create fp of the molecule
-        smiles_string = self.state
-        mol = Chem.MolFromSmiles(smiles_string)
-        fp = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
-        mol_fingerprint = list(fp)
-        # calculate predicitve value of the fp
-        predictive_value = predictor_model.predict([mol_fingerprint])[0]
-        return predictive_value
 
     def choose(self, node: Node) -> Node:
         """
@@ -134,8 +113,8 @@ class MCTS:
             return node.find_random_child()
 
         def score(n):
-            #if self.N[n] == 0:
-             #   return float("-inf")  # Avoid unseen moves.
+            if self.N[n] == 0:
+                return float("-inf")  # Avoid unseen moves.
             return self.Q[n] / self.N[n]  # Average reward.
 
         return max(self.children[node], key=score)
@@ -196,15 +175,12 @@ class MCTS:
         :return: Reward for simulation.
         :rtype: float
         """
-        invert_reward = True
-
         while True:
             if node.is_terminal():
-                reward = node.reward()
-                return 1 - reward if invert_reward else reward
+                reward = node.reward(predictor_model)
+                return reward
 
             node = node.find_random_child()
-            invert_reward = not invert_reward
 
     def _backpropagate(self, path: ty.List[Node], reward: float) -> None:
         """
@@ -242,177 +218,179 @@ class MCTS:
         return max(self.children[node], key=uct)
 
 
-_MOL = namedtuple("Molecule", "molecule terminal")
+
+_MOL = namedtuple("Molecule", "SMILES pred_value terminal num_adds")
 
 class Molecule(_MOL, Node):
-    """
-    Define a molecule
-    """
-    def __int__(self, state = None, is_terminal = None, starter_subunits: List[str] = starters):
-        self.state = state
-        self.is_terminal = is_terminal
-        self.starter_subunits = starters
-        #self.extender_subunits = extenders_subunits
 
-    def check_terminal(self) -> None:
+    def find_children(mol) -> ty.Set["Molecule"]:
         """
-        Check if the current molecule is terminal
-        """
-        if self.state:
-            mol = MolFromSmiles(self.state)
-            substructure = MolFromSmiles('CC(=O)O')
-            #if the molecule do not have CC(=O)O is terminal
-            if mol.HasSubstructMatch(substructure):
-                self.is_terminal = False
-            else:
-                self.is_terminal = True
+        All possible successors of this molecule state.
 
-    def find_children(self) -> ty.Set["molecule"]:
+        :param mol: Molecule: Molecule to find successors of.
+        :return: Set of successor molecules.
+        :rtype: ty.Set["Molecule"]
         """
-        All possible successors of the molecule state.
-
-        :param "molecule": Molecule state to find successors of
-        :return: Set of successor boards.
-        :rtype: ty.Set["molecule"]
-        """
-        # if the molecule can not get more extended no more progress is done
-        if self.terminal:
+        if mol.terminal:  # If the game is finished then no moves can be made.
             return set()
 
-        # if the molecule has not started
-        if self.state == None:
-            #run start_synthesis
-            return self.start_synthesis()
-        else:
-            #run make_add function
-            return self.make_add()
+        #if mol had started
+        if mol.SMILES :
+            # make a progression using each of the extender unions
+            return {mol.make_progress(submol) for submol in extenders}
 
-    def find_random_child(self) -> "molecule":
+        #if mol had not started
+        if not mol.SMILES :
+            return {mol.make_progress(submol) for submol in starters}
+
+
+    def find_random_child(mol) -> "Molecule":
         """
-        Random successor of this board state
+        Random successor of this mol state (for more efficient simulation).
 
-        :param molecule: molecule to find random successor of.
-        :return: Random successor molecule
-        :rtype: "molecule"
+        :param mol: Molecule: Molecule to find random successor of.
+        :return: Random successor molecule.
+        :rtype: "Molecule"
         """
-        # if the molecule is terminal, no additions can be made
-        if self.terminal:
-            return None
-        # get all the possible children
-        children = self.find_children()
-
-        #randomly select a child
-        if children:
-            return random.choice(list(children))
-        else:
+        # If the molecule do not have C(O)O , no progress can be made
+        if mol.terminal:
             return None
 
-    def start_synthesis(self) -> None:
-        """
-        Start the synthesis of a molecule by randomly choosing an initial state from starter subunits.
-        """
-        if not self.starter_subunits:
-            raise ValueError("No starter subunits provided.")
-
-        if self.state == None:
-            self.state = random.choice(self.starter_subunits)
-            self.is_terminal = False
-
+        # If the molecule has not started just use the starters
+        if mol.SMILES == None:
+            possible_sub_ads = starters
+        # else use the extenders
         else:
-            raise ValueError("The molecule has already started.")
-    def make_add(self, extender_subunits: List[str], reaction: Chem.rdChemReactions.ChemicalReaction) -> List[str]:
+            possible_sub_ads = extenders
+
+        # Otherwise, make a progress in the molecule object
+        return mol.make_progress(choice(possible_sub_ads))
+
+    def reward(mol, predictor) -> float:
         """
-        Extend an existing molecule by adding an extender subunit.
+        Calculates the prediction value of a molecule
 
-        :param List[str] extender_subunits: List of extender subunits.
-        """
-        products = []
-        if not self.state:
-            raise ValueError("No initial state provided.")
-
-        if self.is_terminal:
-            raise RuntimeError("Cannot extend a terminal molecule.")
-
-        for subunit in extender_subunits:
-            mol1 = Chem.MolFromSmiles(self.state)
-            mol2 = Chem.MolFromSmiles(subunit)
-            reactants = (mol1, mol2)
-            reaction_products = reaction.RunReactants(reactants)
-
-            # Check if the reaction produced any products
-            if reaction_products:
-                for product in reaction_products:
-                    combined_mol = product[0]
-                    addition_result = Chem.MolToSmiles(combined_mol)
-                    products.append(addition_result)
-
-        return list(set(products))
-
-    def reward(self, predictor_model) -> float:
-        """
-        Calculate the predictive value of a molecule using an external predictive model.
-
-        :param predictor_model: External predictive model.
-        :return: Predictive value for the molecule.
+        :param mol Molecule: Molecule to predict the value from
+        :param predictor: Predictor model used
         :rtype: float
         """
-        if self.is_terminal:
-            raise RuntimeError("Reward called on nonterminal molecule!")
-
-        #create fp of the molecule
-        smiles_string = self.state
-        mol = Chem.MolFromSmiles(smiles_string)
-        fp = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+        #obtain the fp of mol
+        str_SMILES = mol.SMILES
+        molec = Chem.MolFromSmiles(str_SMILES)
+        fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
         mol_fingerprint = list(fp)
 
-        #calculate predicitve value of the fp
+        # calculate predicitve value of the fp
         predictive_value = predictor_model.predict([mol_fingerprint])[0]
         return predictive_value
 
-def generate_mol():
-    """
-    Generate a molecule
-    """
-    tree = MCTS()
-    mol = new_mol(starters)
-    #print(mol.to_pretty_string())
+    def linear_add(mol, subunit: str) -> str:
+        """
+        Perform reaction between current molecule and another molecule
+        """
+        #if the SMILES is None ( molecule generation has just started )
+        if mol.SMILES is None:
+            return subunit
+        # if not, perform the reaction
+        mol1 = Chem.MolFromSmiles(mol.SMILES)
+        mol2 = Chem.MolFromSmiles(subunit)
 
-    while not mol.is_terminal:
-        #while the molecule is not terminal, make extension
-        products = mol.make_add()
+        products = pk_rxn.RunReactants((mol1, mol2))
 
-        if mol.terminal:
-            break
+        if products:
+            # Convert the product molecule to SMILES
+            new_SMILES = Chem.MolToSmiles(products[0][0])
+            return new_SMILES
+        else:
+            raise ValueError("Linear addition could not happened.")
 
-        #train as we go
-        for i in range(100):
-            tree.do_rollout(mol)
 
-        mol = tree.choose(mol)
-        # need to check in which format is mol
+    def is_terminal(mol) -> bool:
+        """
+        Returns True if the node has no children.
+
+        :param mol Molecule: Molecule to check if terminal.
+        :return: True if terminal, False otherwise.
+        :rtype: bool
+        """
+        return mol.terminal
+
+    def make_progress(mol, subunit) -> "Molecule":
+        """
+        Return a mol instance with one addition made.
+
+        :param Molecule mol: molecule to make move on.
+        :
+        """
         print(mol)
+        print(subunit)
+        new_SMILES = mol.linear_add(subunit)
+        new_count = mol.num_adds + 1
+        new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
 
+        #calc the new pred value
+        new_pred_value = (new_mol.reward(predictor_model))
 
+        if new_pred_value > 0.9:
+            is_terminal = True
 
-def new_mol(starter_subunits: List[str]) -> Molecule:
+        elif new_count > 10:
+            is_terminal = True
+        else:
+            is_terminal = None
+
+        return Molecule(new_SMILES, new_pred_value, is_terminal, new_count)
+
+def new_mol() -> Molecule:
     """
     Returns starting state of the molecule
 
     :return: Starting state of the molecule
     :rtype: Molecule
     """
-    mol = Molecule(molecule = None, terminal = False)
-    #proceed to start the synthesis
-    mol.start_synthesis()
+    mol = Molecule(SMILES=None, pred_value=None, terminal=None, num_adds=0)
     return mol
+
+def gen_molecule() -> Molecule:
+    """
+    Generates a molecule
+    """
+    tree = MCTS()
+    mol = new_mol()
+    #print(mol)
+
+    while True:
+        # if we have to start just use starters
+        if mol.SMILES is None:
+            mol = mol.make_progress(choice(starters))
+        # if molecule has already started, use extenders
+        if mol.SMILES:
+            mol = mol.make_progress(choice(extenders))
+
+        for i in range(10):
+            tree.do_rollout(mol)
+
+        mol = tree.choose(mol)
+
+        if mol.terminal:
+            break
+
+    return mol
+
 
 def main() -> None:
     # Turn RDKit warnings off.
     Chem.rdBase.DisableLog("rdApp.error")
 
-    #generate molecule
-    generate_mol()
-
+    # Generate molecule
+    mol = gen_molecule()
+    print(mol)
 
 if __name__ == "__main__":
     main()
+
+#Chem.rdBase.DisableLog("rdApp.error")
+#mol1 = Molecule(SMILES='CCC(S)=O', pred_value=None, terminal=None)
+#print(mol1.find_random_child())
+#prods = Molecule.linear_add(mol1,mol2)
+#print(prods)
