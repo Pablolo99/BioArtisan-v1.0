@@ -298,6 +298,7 @@ class Molecule(_MOL, Node):
 
         # otherwise, make a progress in the molecule object
         possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions)
+        print(possible_children)
         possible_child = choice(list(possible_children))
         return possible_child
 
@@ -321,36 +322,6 @@ class Molecule(_MOL, Node):
         # calculate predicitve value of the fp
         predictive_value = predictor_model.predict([mol_fingerprint])[0]
         return predictive_value
-
-    def cyc_reaction_check(mol, reaction: str) -> bool:
-        """
-        Check if the reaction can occur with a given molecule
-
-        :param Molecule mol: Molecule object with SMILES atribute
-        :param reaction: Reaction in SMILES string
-        :return: True if the reaction can occur, False otherwise
-        """
-        molecule = Chem.MolFromSmiles(mol.SMILES)
-        rxn = rdChemReactions.ReactionFromSmarts(reaction)
-
-        return rxn.VerifyMol(molecule)
-
-    def add_reaction_check(mol, subunit: str,  reaction: str) -> bool:
-        """
-        Check if the reaction can occur with a given molecule
-
-        :param Molecule mol: Molecule object with SMILES atribute
-        :param reaction: Reaction in SMILES string
-        :return: True if the reaction can occur, False otherwise
-        """
-        molecule = Chem.MolFromSmiles(mol.SMILES)
-        molecule_2 = Chem.MolFromSmiles(subunit)
-
-        rxn = rdChemReactions.ReactionFromSmarts(reaction)
-
-        # Check if the reaction can be applied to the molecules
-        return rxn.VerifyMol(molecule) and rxn.VerifyMol(molecule_2)
-
 
 
     def linear_add(mol, subunit: str) -> str:
@@ -376,10 +347,11 @@ class Molecule(_MOL, Node):
             new_SMILES = Chem.MolToSmiles(products[0][0])
             return new_SMILES
 
-        else:
-            print(Chem.MolToSmiles(mol1))
-            print(Chem.MolToSmiles(mol2))
-            raise ValueError("Linear addition could not happened.")
+        #else:
+            #print(Chem.MolToSmiles(mol1))
+            #print(Chem.MolToSmiles(mol2))
+            #raise ValueError("Linear addition could not happened.")
+            #return None
 
     def cyclization(mol, reaction: str) -> ty.Set[str]:
         """
@@ -407,7 +379,8 @@ class Molecule(_MOL, Node):
         except ValueError as e:
             None
 
-        return unique_outputs
+        if unique_outputs != set():
+            return unique_outputs
 
 
     def is_terminal(mol) -> bool:
@@ -419,6 +392,23 @@ class Molecule(_MOL, Node):
         :rtype: bool
         """
         return mol.terminal
+
+    def check_terminal(mol) -> bool:
+        """
+        Checks if a molecule is terminal or not
+        :param Molecule mol: Molecule to check if it is terminal
+        :return: True if the molecule is terminal, False otherwise
+        :rtype: bool
+        """
+        if mol.pred_value > 0.9:
+            return True
+
+        elif mol.num_adds >= 10:
+            return True
+        else:
+            return False
+
+
 
     def make_progress(mol, subunit: str, reactions: ty.List[str]) -> ty.Set["Molecule"]:
 
@@ -433,70 +423,49 @@ class Molecule(_MOL, Node):
         """
         all_newmol = set()
         new_SMILES = mol.linear_add(subunit)
-        new_count = mol.num_adds + 1
-        new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
 
-        # calc the new pred value
-        new_pred_value = (new_mol.reward(predictor_model))
+        if new_SMILES is not None:
+            new_count = mol.num_adds + 1
+            new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
 
-        if new_pred_value > 0.9:
-            is_terminal = True
+            # calc the new pred value
+            new_pred_value = new_mol.reward(predictor_model)
 
-        elif new_count >= 10:
-            is_terminal = True
-        else:
-            is_terminal = None
+            # add just the linear version, no cyclizations
+            just_linear_mol = Molecule(new_SMILES, new_pred_value, mol.terminal, new_count)
+            check = just_linear_mol.check_terminal()
 
-        # add just the linear version, no cyclizations
-        just_linear_mol = Molecule(new_SMILES, new_pred_value, is_terminal, new_count)
-        all_newmol.add(just_linear_mol)
+            just_linear_mol = Molecule(new_SMILES, new_pred_value, check, new_count)
 
-        # if molecule has had ar least 4 additions, cyclate
-        if new_count >= 4:
-            #from new molecule, cyclate and obtain the new SMILES, pred values and terminal
-            for cyc_rxn in reactions:
+            all_newmol.add(just_linear_mol)
 
-                cyc_products = just_linear_mol.cyclization(cyc_rxn)
-                if cyc_products == set():
-                    continue
-                for cyc_SMILES in cyc_products:
+            # if molecule has had ar least 4 additions, cyclate
+            if new_count >= 4:
+                #from new molecule, cyclate and obtain the new SMILES, pred values and terminal
+                for cyc_rxn in reactions:
 
-                    new_cyc_mol = Molecule(cyc_SMILES, None, None, new_count)
-                    new_pred_value = (new_cyc_mol.reward(predictor_model))
+                    cyc_products = just_linear_mol.cyclization(cyc_rxn)
 
-                    if new_pred_value > 0.9:
-                        is_terminal = True
-                    elif new_count >= 10:
-                        is_terminal = True
-                    else:
-                        is_terminal = None
+                    if cyc_products is None:
+                        continue
 
-                    cyc_mol = Molecule(cyc_SMILES, new_pred_value, is_terminal, new_count)
-                    all_newmol.add(cyc_mol)
+                    for cyc_SMILES in cyc_products:
 
-        return all_newmol
+                        new_cyc_mol = Molecule(cyc_SMILES, None, None, new_count)
+                        new_pred_value = new_cyc_mol.reward(predictor_model)
+
+                        # add the counts and check terminal
+                        cyc_mol = Molecule(cyc_SMILES, new_pred_value, mol.terminal, new_count)
+                        check = cyc_mol.check_terminal()
+
+                        cyc_mol = Molecule(cyc_SMILES, new_pred_value, check, new_count)
+                        all_newmol.add(cyc_mol)
 
 
-
-"""
-    def make_progress(mol, subunit) -> "Molecule":
-
-        new_SMILES = mol.linear_add(subunit)
-        new_count = mol.num_adds + 1
-        new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
-        #calc the new pred value
-        new_pred_value = (new_mol.reward(predictor_model))
-
-        if new_pred_value > 0.9:
-            is_terminal = True
-
-        elif new_count >= 10:
-            is_terminal = True
-        else:
-            is_terminal = None
-
-        return Molecule(new_SMILES, new_pred_value, is_terminal, new_count)
-"""
+            return all_newmol
+        #else:
+        #    print("Linear addition could not happen.")
+        #return all_newmol
 
 def new_mol() -> Molecule:
     """
