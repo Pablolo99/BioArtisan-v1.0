@@ -24,12 +24,39 @@ extenders = [
     'O=C(O)C(CCCl)C(=O)S',
     'O=C(O)C(O)C(=O)S',
     'COC(C(=O)O)C(=O)S',
-    'NC(C(=O)O)C(=O)S',
+    'NC(C(=O)O)C(=O)S'
 ]
 starters = [
     'CC(S)=O',
     'CCC(S)=O'
 ]
+
+cyc_reactions = [
+'([O:4]=[C:3]([*:2])[*:1].[C:6]([*:5])([*:7])[*:8])>>([O:4][C:3]([*:2])([*:1])[C:6]([*:5])([*:7])[*:8])',
+'([O:4]=[C:3]([*:2])[*:1].[O:7][C:6]([*:5])[*:8])>>([O:4]=[C:3]([*:2])[O:7][C:6]([*:5])[*:8])',
+'([O:4]=[C:3]([*:2])[*:1].[O:7][C:6]([*:5])[*:8])>>([*:8][C:6]([*:5])[O:4][C:3]([*:2])[*:1])',
+'([C:1]([*:11])[C:2](=[O:8])[C:3][C:4](=[O:9])[C:5][C:6](=[O:10])[*:7])>>([C:1]([*:11])1=[C:2]([O:8])[C:3]=[C:4]([O:9])[C:5]=[C:6]1([*:7]))',
+'([C:1](=[O:8])[C:2]=[C:3][C:4][C:5](=[O:9]))>>([C:1](=[O:8])[C:2][C:3][C:4][C:5]([O:9]))',
+'([C:1](=[O:8])[C:2]=[C:3][C:4][C:5]([O:9]))>>([C:1]([O:8]1)=[C:2][C:3][C:4][C:5]1)',
+'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
+'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
+'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5][C:6]=[C:7]1[C:8])',
+'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1[C:8])',
+'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:13])[C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:3])[C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
+'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
+'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5][C:6]=[C:7]1)',
+'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1)',
+'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1]([O:12])1[C:2]2[C:3]([O:13])=[C:4][C:5]([O:14])=[C:6][C:7]=2[C:8]=[C:9]([O:16])[C:10]=1[C:11])',
+'([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]([O:19]3)[C:10]=1[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
+'([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]1([O:19]3)[C:10]=[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
+'([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15]1)[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]3=[C:9]1([O:19])[C:10]=[C:11](=[O:20])[C:12]3[C:13]([O:21])[C:14])'
+]
+
+
 
 class Node(ABC):
     """
@@ -59,7 +86,7 @@ class Node(ABC):
         return True
 
     @abstractmethod
-    def reward(self) -> float:
+    def reward(self, predictor) -> float:
         """
         Assumes `self` is terminal node. 1=win, 0=loss, .5=tie, etc.
         """
@@ -231,17 +258,23 @@ class Molecule(_MOL, Node):
         :return: Set of successor molecules.
         :rtype: ty.Set["Molecule"]
         """
-        if mol.terminal:  # If the game is finished then no moves can be made.
+        if mol.terminal:  # If the proc
             return set()
 
+        children = set()
         #if mol had started
         if mol.SMILES :
+
             # make a progression using each of the extender unions
-            return {mol.make_progress(submol) for submol in extenders}
+            for submol in extenders:
+                children |= mol.make_progress(submol, cyc_reactions)
 
         #if mol had not started
         if not mol.SMILES :
-            return {mol.make_progress(submol) for submol in starters}
+            for submol in starters:
+                children |= mol.make_progress(submol, cyc_reactions)
+
+        return children
 
 
     def find_random_child(mol) -> "Molecule":
@@ -252,30 +285,35 @@ class Molecule(_MOL, Node):
         :return: Random successor molecule.
         :rtype: "Molecule"
         """
-        # If the molecule do not have C(O)O , no progress can be made
+        # if the molecule do not have C(O)O  or it looks promising, no progress should be made
         if mol.terminal:
             return None
 
-        # If the molecule has not started just use the starters
-        if mol.SMILES == None:
+        # if the molecule has not started just use the starters
+        if mol.SMILES is None:
             possible_sub_ads = starters
         # else use the extenders
         else:
             possible_sub_ads = extenders
 
-        # Otherwise, make a progress in the molecule object
-        return mol.make_progress(choice(possible_sub_ads))
+        # otherwise, make a progress in the molecule object
+        possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions)
+        possible_child = choice(list(possible_children))
+        return possible_child
 
     def reward(mol, predictor) -> float:
         """
         Calculates the prediction value of a molecule
 
-        :param mol Molecule: Molecule to predict the value from
+        :param Molecule mol: Molecule to predict the value from
         :param predictor: Predictor model used
         :rtype: float
         """
         #obtain the fp of mol
         str_SMILES = mol.SMILES
+        if str_SMILES is None:
+            return 0.0
+
         molec = Chem.MolFromSmiles(str_SMILES)
         fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
         mol_fingerprint = list(fp)
@@ -283,6 +321,37 @@ class Molecule(_MOL, Node):
         # calculate predicitve value of the fp
         predictive_value = predictor_model.predict([mol_fingerprint])[0]
         return predictive_value
+
+    def cyc_reaction_check(mol, reaction: str) -> bool:
+        """
+        Check if the reaction can occur with a given molecule
+
+        :param Molecule mol: Molecule object with SMILES atribute
+        :param reaction: Reaction in SMILES string
+        :return: True if the reaction can occur, False otherwise
+        """
+        molecule = Chem.MolFromSmiles(mol.SMILES)
+        rxn = rdChemReactions.ReactionFromSmarts(reaction)
+
+        return rxn.VerifyMol(molecule)
+
+    def add_reaction_check(mol, subunit: str,  reaction: str) -> bool:
+        """
+        Check if the reaction can occur with a given molecule
+
+        :param Molecule mol: Molecule object with SMILES atribute
+        :param reaction: Reaction in SMILES string
+        :return: True if the reaction can occur, False otherwise
+        """
+        molecule = Chem.MolFromSmiles(mol.SMILES)
+        molecule_2 = Chem.MolFromSmiles(subunit)
+
+        rxn = rdChemReactions.ReactionFromSmarts(reaction)
+
+        # Check if the reaction can be applied to the molecules
+        return rxn.VerifyMol(molecule) and rxn.VerifyMol(molecule_2)
+
+
 
     def linear_add(mol, subunit: str) -> str:
         """
@@ -293,7 +362,7 @@ class Molecule(_MOL, Node):
         :return: resulting Molecule in SMILES format.
         :rtype: str
         """
-        #if the SMILES is None ( molecule generation has just started )
+        # if the SMILES is None ( molecule generation has just started )
         if mol.SMILES is None:
             return subunit
         # if not, perform the reaction
@@ -306,29 +375,112 @@ class Molecule(_MOL, Node):
             # Convert the product molecule to SMILES
             new_SMILES = Chem.MolToSmiles(products[0][0])
             return new_SMILES
+
         else:
+            print(Chem.MolToSmiles(mol1))
+            print(Chem.MolToSmiles(mol2))
             raise ValueError("Linear addition could not happened.")
+
+    def cyclization(mol, reaction: str) -> ty.Set[str]:
+        """
+        Perform reactions within the current molecule atoms in order to obtain cycles
+
+        :param mol: Molecule object to cycle
+        :param reaction: chemical reaction
+        :return: resulting Molecules in SMILES format
+        :rtype: set(str)
+        """
+        smiles_mol = mol.SMILES
+        inmol = Chem.MolFromSmiles(smiles_mol)
+        unique_outputs = set()
+
+        rxn = rdChemReactions.ReactionFromSmarts(reaction)
+        try:
+            # Run the reaction
+            results = rxn.RunReactants([inmol])
+            #iterate through each result and add to the
+            for result in results:
+                for molec in result:
+                    Chem.SanitizeMol(molec)
+                    unique_outputs.add(Chem.MolToSmiles(molec))
+
+        except ValueError as e:
+            None
+
+        return unique_outputs
 
 
     def is_terminal(mol) -> bool:
         """
         Returns True if the node has no children.
 
-        :param mol Molecule: Molecule to check if terminal.
+        :param Molecule mol: Molecule to check if terminal.
         :return: True if terminal, False otherwise.
         :rtype: bool
         """
         return mol.terminal
 
-    def make_progress(mol, subunit) -> "Molecule":
+    def make_progress(mol, subunit: str, reactions: ty.List[str]) -> ty.Set["Molecule"]:
+
         """
-        Return a mol instance with one addition made.
+        Return a set of mol instances with one addition made and cyclization events made.
 
         :param Molecule mol: molecule to make move on.
         :param subunit: molecule to add to the original molecule (mol)
-        :return: Molecule with new atributes
-        :rtype: Molecule
+        :param reactions: list of chemical reactions in SMILES format as strings
+        :return: set["Molecule"], Molecule with new atributes
+        :rtype: set["Molecule"]
         """
+        all_newmol = set()
+        new_SMILES = mol.linear_add(subunit)
+        new_count = mol.num_adds + 1
+        new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
+
+        # calc the new pred value
+        new_pred_value = (new_mol.reward(predictor_model))
+
+        if new_pred_value > 0.9:
+            is_terminal = True
+
+        elif new_count >= 10:
+            is_terminal = True
+        else:
+            is_terminal = None
+
+        # add just the linear version, no cyclizations
+        just_linear_mol = Molecule(new_SMILES, new_pred_value, is_terminal, new_count)
+        all_newmol.add(just_linear_mol)
+
+        # if molecule has had ar least 4 additions, cyclate
+        if new_count >= 4:
+            #from new molecule, cyclate and obtain the new SMILES, pred values and terminal
+            for cyc_rxn in reactions:
+
+                cyc_products = just_linear_mol.cyclization(cyc_rxn)
+                if cyc_products == set():
+                    continue
+                for cyc_SMILES in cyc_products:
+
+                    new_cyc_mol = Molecule(cyc_SMILES, None, None, new_count)
+                    new_pred_value = (new_cyc_mol.reward(predictor_model))
+
+                    if new_pred_value > 0.9:
+                        is_terminal = True
+                    elif new_count >= 10:
+                        is_terminal = True
+                    else:
+                        is_terminal = None
+
+                    cyc_mol = Molecule(cyc_SMILES, new_pred_value, is_terminal, new_count)
+                    all_newmol.add(cyc_mol)
+
+        return all_newmol
+
+
+
+"""
+    def make_progress(mol, subunit) -> "Molecule":
+
         new_SMILES = mol.linear_add(subunit)
         new_count = mol.num_adds + 1
         new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
@@ -338,12 +490,13 @@ class Molecule(_MOL, Node):
         if new_pred_value > 0.9:
             is_terminal = True
 
-        elif new_count > 10:
+        elif new_count >= 10:
             is_terminal = True
         else:
             is_terminal = None
 
         return Molecule(new_SMILES, new_pred_value, is_terminal, new_count)
+"""
 
 def new_mol() -> Molecule:
     """
@@ -355,20 +508,28 @@ def new_mol() -> Molecule:
     mol = Molecule(SMILES=None, pred_value=None, terminal=None, num_adds=0)
     return mol
 
+
 def gen_molecule() -> Molecule:
     """
     Generates a molecule
     """
     tree = MCTS()
     mol = new_mol()
+    #mol = Molecule(SMILES='CCC(=O)CC(=O)C(N)C1OC(S)C(CCCl)C(=O)C1CC', pred_value=None, terminal=None, num_adds=0)
 
     while True:
-        # train as we go, 10 rollouts
+        # train as we go, 20 rollouts
         for i in range(20):
-            tree.do_rollout(mol)
+            # if the mol is terminal do not rollout
+            if mol.terminal:
+                break
+            # if mol is terminal do rollout
+            else:
+                tree.do_rollout(mol)
+
 
         mol = tree.choose(mol)
-        print(mol)
+        #print(mol)
         if mol.terminal:
             break
 
@@ -379,15 +540,18 @@ def main() -> None:
     # Turn RDKit warnings off.
     Chem.rdBase.DisableLog("rdApp.error")
 
+
     # Generate molecule
     mol = gen_molecule()
-    #print(mol)
+    print(mol)
+
+
+
+
+
+
 
 if __name__ == "__main__":
     main()
 
-#Chem.rdBase.DisableLog("rdApp.error")
-#mol1 = Molecule(SMILES='CCC(S)=O', pred_value=None, terminal=None)
-#print(mol1.find_random_child())
-#prods = Molecule.linear_add(mol1,mol2)
-#print(prods)
+
