@@ -408,9 +408,10 @@ class Molecule(_MOL, Node):
             return True
 
         smiles = Chem.MolFromSmiles(mol.SMILES)
-        carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+        carboxylic_pattern = Chem.MolFromSmarts("C(=O)S")
+        adds = mol.num_adds
 
-        if smiles.HasSubstructMatch(carboxylic_pattern):
+        if not smiles.HasSubstructMatch(carboxylic_pattern) and adds > 1:
             return True
 
         else:
@@ -523,7 +524,7 @@ def main() -> None:
 
     # Generate molecule
     mol = gen_molecule()
-    print(mol)
+    #print(mol)
 
 
 
