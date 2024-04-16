@@ -79,7 +79,7 @@ class Node(ABC):
         return Node
 
     @abstractmethod
-    def is_terminal(self) -> bool:
+    def check_terminal(self) -> bool:
         """
         Returns True if the node has no children/
         """
@@ -133,7 +133,7 @@ class MCTS:
         :return: The chosen successor node.
         :rtype: Node
         """
-        if node.is_terminal():
+        if node.check_terminal():
             raise RuntimeError(f'Choose called on terminal node {node}!')
 
         if node not in self.children:
@@ -203,7 +203,7 @@ class MCTS:
         :rtype: float
         """
         while True:
-            if node.is_terminal():
+            if node.check_terminal():
                 reward = node.reward(predictor_model)
                 return reward
 
@@ -383,16 +383,6 @@ class Molecule(_MOL, Node):
         if unique_outputs != set():
             return unique_outputs
 
-
-    def is_terminal(mol) -> bool:
-        """
-        Returns True if the node has no children.
-
-        :param Molecule mol: Molecule to check if terminal.
-        :return: True if terminal, False otherwise.
-        :rtype: bool
-        """
-        return mol.terminal
 
     def check_terminal(mol) -> bool:
         """
