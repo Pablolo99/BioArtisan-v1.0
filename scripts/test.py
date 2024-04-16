@@ -397,12 +397,12 @@ class Molecule(_MOL, Node):
         if mol.num_adds >= 10:
             return True
 
-        smiles = Chem.MolFromSmiles(mol.SMILES)
-        carboxylic_pattern = Chem.MolFromSmarts("C(=O)S")
         adds = mol.num_adds
-
-        if not smiles.HasSubstructMatch(carboxylic_pattern) and adds > 1:
-            return True
+        if adds > 1:
+            smiles = Chem.MolFromSmiles(mol.SMILES)
+            carboxylic_pattern = Chem.MolFromSmarts("C(=O)S")
+            if not smiles.HasSubstructMatch(carboxylic_pattern):
+                return True
 
         else:
             return False
@@ -421,6 +421,7 @@ class Molecule(_MOL, Node):
         :rtype: set["Molecule"]
         """
         all_newmol = set()
+
         new_SMILES = mol.linear_add(subunit)
 
         if mol.terminal:
@@ -476,7 +477,7 @@ def new_mol() -> Molecule:
     :return: Starting state of the molecule
     :rtype: Molecule
     """
-    mol = Molecule(SMILES=None, pred_value=None, terminal=None, num_adds=0)
+    mol = Molecule(SMILES=None, pred_value=0.0, terminal=None, num_adds=0)
     return mol
 
 
