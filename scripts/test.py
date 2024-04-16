@@ -446,7 +446,7 @@ class Molecule(_MOL, Node):
             # add just the linear version, no cyclizations
             just_linear_mol = Molecule(new_SMILES, new_pred_value, mol.terminal, new_count)
             check = just_linear_mol.check_terminal()
-            print(check)
+
             just_linear_mol = Molecule(new_SMILES, new_pred_value, check, new_count)
 
             all_newmol.add(just_linear_mol)
@@ -469,7 +469,7 @@ class Molecule(_MOL, Node):
                         # add the counts and check terminal
                         cyc_mol = Molecule(cyc_SMILES, new_pred_value, mol.terminal, new_count)
                         check = cyc_mol.check_terminal()
-                        print(check)
+
                         cyc_mol = Molecule(cyc_SMILES, new_pred_value, check, new_count)
                         all_newmol.add(cyc_mol)
 
