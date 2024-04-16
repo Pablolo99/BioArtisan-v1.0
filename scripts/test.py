@@ -300,6 +300,7 @@ class Molecule(_MOL, Node):
         possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions)
         print(possible_children)
         possible_child = choice(list(possible_children))
+        print(possible_child)
         return possible_child
 
     def reward(mol, predictor) -> float:
@@ -403,8 +404,15 @@ class Molecule(_MOL, Node):
         if mol.pred_value > 0.9:
             return True
 
-        elif mol.num_adds >= 10:
+        if mol.num_adds >= 10:
             return True
+
+        smiles = Chem.MolFromSmiles(mol.SMILES)
+        carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+
+        if smiles.HasSubstructMatch(carboxylic_pattern):
+            return True
+
         else:
             return False
 
@@ -424,6 +432,9 @@ class Molecule(_MOL, Node):
         all_newmol = set()
         new_SMILES = mol.linear_add(subunit)
 
+        if mol.terminal:
+            return
+
         if new_SMILES is not None:
             new_count = mol.num_adds + 1
             new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
@@ -434,7 +445,7 @@ class Molecule(_MOL, Node):
             # add just the linear version, no cyclizations
             just_linear_mol = Molecule(new_SMILES, new_pred_value, mol.terminal, new_count)
             check = just_linear_mol.check_terminal()
-
+            print(check)
             just_linear_mol = Molecule(new_SMILES, new_pred_value, check, new_count)
 
             all_newmol.add(just_linear_mol)
@@ -457,7 +468,7 @@ class Molecule(_MOL, Node):
                         # add the counts and check terminal
                         cyc_mol = Molecule(cyc_SMILES, new_pred_value, mol.terminal, new_count)
                         check = cyc_mol.check_terminal()
-
+                        print(check)
                         cyc_mol = Molecule(cyc_SMILES, new_pred_value, check, new_count)
                         all_newmol.add(cyc_mol)
 
@@ -484,7 +495,7 @@ def gen_molecule() -> Molecule:
     """
     tree = MCTS()
     mol = new_mol()
-    #mol = Molecule(SMILES='CCC(=O)CC(=O)C(N)C1OC(S)C(CCCl)C(=O)C1CC', pred_value=None, terminal=None, num_adds=0)
+    #mol = Molecule(SMILES='CCC(=O)C1OC2C(N)C(=O)C(N)C(O)(S)C2(N)C1=O', pred_value=0.0, terminal=False, num_adds=5)
 
     while True:
         # train as we go, 20 rollouts
