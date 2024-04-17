@@ -487,7 +487,6 @@ def gen_molecule() -> Molecule:
     """
     tree = MCTS()
     mol = new_mol()
-    #mol = Molecule(SMILES='CCC(=O)C1OC2C(N)C(=O)C(N)C(O)(S)C2(N)C1=O', pred_value=0.0, terminal=False, num_adds=5)
 
     while True:
         # train as we go, 20 rollouts
@@ -495,7 +494,7 @@ def gen_molecule() -> Molecule:
             # if the mol is terminal do not rollout
             if mol.terminal:
                 break
-            # if mol is terminal do rollout
+            # if mol is not terminal do rollout
             else:
                 tree.do_rollout(mol)
 
@@ -509,13 +508,25 @@ def gen_molecule() -> Molecule:
 
 
 def main() -> None:
-    # Turn RDKit warnings off.
+    """
+    Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+
+    :param num_desired: The number of molecules with pred_value = 1.0 desired
+    :type num_desired: int
+    """
+    # turn RDKit warnings off.
     Chem.rdBase.DisableLog("rdApp.error")
 
+    # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+    generated_molecules = []
+    num_desired = 2
+    while len(generated_molecules) < num_desired:
+        mol = gen_molecule()
+        if mol.pred_value == 1.0:
+            generated_molecules.append(mol)
 
-    # Generate molecule
-    mol = gen_molecule()
-    #print(mol)
+    for mol in generated_molecules:
+        print(f"Molecule: {mol.SMILES}, Predictive Value: {mol.pred_value}")
 
 
 
