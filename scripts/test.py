@@ -1,6 +1,6 @@
 import random
 import joblib
-from rdkit import Chem
+from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, rdChemReactions
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 import math
@@ -10,11 +10,17 @@ from random import choice
 from typing import List
 from collections import defaultdict, namedtuple
 
+# Turn off RDKit warnings
+RDLogger.DisableLog('rdApp.error')
+
 # Load the predictor model
-predictor_model = joblib.load("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/scripts/model.pkl")
+try:
+    predictor_model = joblib.load("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/scripts/model.pkl")
+except Exception as e:
+    predictor_model = None 
 
 # Define the reaction SMARTS pattern
-pk_reaction = '[S:1][C:2](=[O:3])([*:4]).[S:5][C:6](=[O:7])[*:8][C:9](=[O:10])[O:11]>>[S:5][C:6](=[O:7])[*:8][C:2](=[O:3])([*:4])'
+pk_reaction = '[S][C:2](=[O:3])([*:4]).[S:5][C:6](=[O:7])[*:8][C](=[O])[O]>>[S:5][C:6](=[O:7])[*:8][C:2](=[O:3])([*:4])'
 pk_rxn = rdChemReactions.ReactionFromSmarts(pk_reaction)
 
 extenders = [
@@ -33,27 +39,27 @@ starters = [
 
 cyc_reactions = [
 '([O:4]=[C:3]([*:2])[*:1].[C:6]([*:5])([*:7])[*:8])>>([O:4][C:3]([*:2])([*:1])[C:6]([*:5])([*:7])[*:8])',
-'([O:4]=[C:3]([*:2])[*:1].[O:7][C:6]([*:5])[*:8])>>([O:4]=[C:3]([*:2])[O:7][C:6]([*:5])[*:8])',
-'([O:4]=[C:3]([*:2])[*:1].[O:7][C:6]([*:5])[*:8])>>([*:8][C:6]([*:5])[O:4][C:3]([*:2])[*:1])',
-'([C:1]([*:11])[C:2](=[O:8])[C:3][C:4](=[O:9])[C:5][C:6](=[O:10])[*:7])>>([C:1]([*:11])1=[C:2]([O:8])[C:3]=[C:4]([O:9])[C:5]=[C:6]1([*:7]))',
-'([C:1](=[O:8])[C:2]=[C:3][C:4][C:5](=[O:9]))>>([C:1](=[O:8])[C:2][C:3][C:4][C:5]([O:9]))',
-'([C:1](=[O:8])[C:2]=[C:3][C:4][C:5]([O:9]))>>([C:1]([O:8]1)=[C:2][C:3][C:4][C:5]1)',
-'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
-'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
-'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5][C:6]=[C:7]1[C:8])',
-'([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1[C:8])',
-'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:13])[C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
-'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
-'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:3])[C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
-'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
-'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
-'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
-'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5][C:6]=[C:7]1)',
-'([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1)',
-'([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1]([O:12])1[C:2]2[C:3]([O:13])=[C:4][C:5]([O:14])=[C:6][C:7]=2[C:8]=[C:9]([O:16])[C:10]=1[C:11])',
-'([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]([O:19]3)[C:10]=1[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
-'([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]1([O:19]3)[C:10]=[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
-'([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15]1)[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]3=[C:9]1([O:19])[C:10]=[C:11](=[O:20])[C:12]3[C:13]([O:21])[C:14])'
+# '([O:4]=[C:3]([*:2])[*:1].[O:7][C:6]([*:5])[*:8])>>([O:4]=[C:3]([*:2])[O:7][C:6]([*:5])[*:8])',
+# '([O:4]=[C:3]([*:2])[*:1].[O:7][C:6]([*:5])[*:8])>>([*:8][C:6]([*:5])[O:4][C:3]([*:2])[*:1])',
+# '([C:1]([*:11])[C:2](=[O:8])[C:3][C:4](=[O:9])[C:5][C:6](=[O:10])[*:7])>>([C:1]([*:11])1=[C:2]([O:8])[C:3]=[C:4]([O:9])[C:5]=[C:6]1([*:7]))',
+# '([C:1](=[O:8])[C:2]=[C:3][C:4][C:5](=[O:9]))>>([C:1](=[O:8])[C:2][C:3][C:4][C:5]([O:9]))',
+# '([C:1](=[O:8])[C:2]=[C:3][C:4][C:5]([O:9]))>>([C:1]([O:8]1)=[C:2][C:3][C:4][C:5]1)',
+# '([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
+# '([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
+# '([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5][C:6]=[C:7]1[C:8])',
+# '([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O:12])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1[C:8])',
+# '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:13])[C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+# '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+# '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:3])[C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+# '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+# '([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
+# '([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
+# '([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5][C:6]=[C:7]1)',
+# '([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O:11]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1)',
+# '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O:15])[C:8][C:9](=[O:16])[C:10][C:11](=[O:17]))>>([C:1]([O:12])1[C:2]2[C:3]([O:13])=[C:4][C:5]([O:14])=[C:6][C:7]=2[C:8]=[C:9]([O:16])[C:10]=1[C:11])',
+# '([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]([O:19]3)[C:10]=1[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
+# '([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]1([O:19]3)[C:10]=[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
+# '([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O:18])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15]1)[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]3=[C:9]1([O:19])[C:10]=[C:11](=[O:20])[C:12]3[C:13]([O:21])[C:14])'
 ]
 
 
@@ -298,9 +304,9 @@ class Molecule(_MOL, Node):
 
         # otherwise, make a progress in the molecule object
         possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions)
-        print(possible_children)
+        # print(possible_children)
         possible_child = choice(list(possible_children))
-        print(possible_child)
+        # print(possible_child)
         return possible_child
 
     def reward(mol, predictor) -> float:
@@ -311,18 +317,22 @@ class Molecule(_MOL, Node):
         :param predictor: Predictor model used
         :rtype: float
         """
-        #obtain the fp of mol
-        str_SMILES = mol.SMILES
-        if str_SMILES is None:
-            return 0.0
+        if predictor is not None:
+            #obtain the fp of mol
+            str_SMILES = mol.SMILES
+            if str_SMILES is None:
+                return -1.0
 
-        molec = Chem.MolFromSmiles(str_SMILES)
-        fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
-        mol_fingerprint = list(fp)
+            molec = Chem.MolFromSmiles(str_SMILES)
+            fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
+            mol_fingerprint = list(fp)
 
-        # calculate predicitve value of the fp
-        predictive_value = predictor_model.predict([mol_fingerprint])[0]
-        return predictive_value
+            # calculate predicitve value of the fp
+            predictive_value = predictor_model.predict_proba([mol_fingerprint])[0]
+            return predictive_value
+        else:
+            # return random value between 0 and 1
+            return random.random()
 
 
     def linear_add(mol, subunit: str) -> str:
@@ -394,7 +404,7 @@ class Molecule(_MOL, Node):
         if mol.pred_value > 0.9:
             return True
 
-        if mol.num_adds >= 10:
+        if mol.num_adds >= 3:
             return True
 
         adds = mol.num_adds
@@ -502,6 +512,7 @@ def gen_molecule() -> Molecule:
         mol = tree.choose(mol)
         #print(mol)
         if mol.terminal:
+            print("CHK", mol.pred_value)
             break
 
     return mol
@@ -522,12 +533,12 @@ def main() -> None:
     num_desired = 2
     while len(generated_molecules) < num_desired:
         mol = gen_molecule()
-        if mol.pred_value == 1.0:
+        if mol.pred_value >= 0.5:
             generated_molecules.append(mol)
 
     for mol in generated_molecules:
-        print(f"Molecule: {mol.SMILES}, Predictive Value: {mol.pred_value}")
-
+        # print(f"Molecule: {mol.SMILES}, Predictive Value: {mol.pred_value}")
+        pass
 
 
 
