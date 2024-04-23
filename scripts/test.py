@@ -1,3 +1,4 @@
+import warnings
 import argparse
 import random
 import joblib
@@ -10,6 +11,9 @@ from abc import ABC, abstractmethod
 from random import choice
 from typing import List
 from collections import defaultdict, namedtuple
+
+
+warnings.filterwarnings('ignore')
 
 # Turn off RDKit warnings
 RDLogger.DisableLog('rdApp.error')
@@ -24,6 +28,9 @@ RDLogger.DisableLog('rdApp.error')
 def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Path to model file .pkl")
+    parser.add_argument("--output", required=True, help="Path to output file .txt" )
+    parser.add_argument("--num_molecules", required=True, help="Number of wanted molecules")
+    parser.add_argument("--pred_limit", required=True, help="Lower limit predictor value desired")
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
@@ -408,8 +415,7 @@ class Molecule(_MOL, Node):
         :return: True if the molecule is terminal, False otherwise
         :rtype: bool
         """
-        print(mol.SMILES)
-        print(mol.pred_value)
+
         if mol.pred_value > 0.9:
             return True
 
@@ -520,9 +526,7 @@ def gen_molecule(predictor_model) -> Molecule:
 
         mol = tree.choose(mol)
         if mol.terminal:
-            print('CHK',mol.pred_value)
             break
-        #print(mol)
 
     return mol
 
@@ -534,27 +538,37 @@ def main() -> None:
     :param num_desired: The number of molecules with pred_value = 1.0 desired
     :type num_desired: int
     """
+
+    # set the arguments from terminal line
     args = cli()
 
-
     predictor_model = joblib.load(args.model)
+    output_file = args.output
+    num_wanted = int(args.num_molecules)
+    pred_limit = float(args.pred_limit)
 
-
-
-    # turn RDKit warnings off.
+    # turn warnings off.
     Chem.rdBase.DisableLog("rdApp.error")
+    warnings.filterwarnings('ignore')
+    RDLogger.DisableLog('rdApp.error')
 
     # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
-    generated_molecules = []
-    num_desired = 2
-    while len(generated_molecules) < num_desired:
-        mol = gen_molecule(predictor_model)
-        if mol.pred_value >= 0.9:
-            generated_molecules.append(mol)
+    with open(output_file, 'w') as generated_molecules:
+        generated_molecules.write("ID\tSMILES\tpred_value\n")
 
-    for mol in generated_molecules:
-        #print(f"Molecule: {mol.SMILES}, Predictive Value: {mol.pred_value}")
-        pass
+        num_mols = 0
+
+        while num_mols < num_wanted:
+            mol = gen_molecule(predictor_model)
+            if mol.pred_value >= pred_limit:
+                print(mol)
+                #write info in tsv format
+                generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
+                num_mols += 1
+                if num_mols < num_wanted:
+                    generated_molecules.write('\n')
+
+    print(f"{num_mols} molecules with pred_value >= {pred_limit} generated and saved to {output_file}")
 
 
 
