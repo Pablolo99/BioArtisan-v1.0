@@ -542,7 +542,7 @@ def main() -> None:
     num_desired = 2
     while len(generated_molecules) < num_desired:
         mol = gen_molecule()
-        if mol.pred_value >= 0.5:
+        if mol.pred_value >= 0.9:
             generated_molecules.append(mol)
 
     for mol in generated_molecules:
