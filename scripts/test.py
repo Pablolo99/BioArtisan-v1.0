@@ -1,3 +1,4 @@
+import argparse
 import random
 import joblib
 from rdkit import Chem, RDLogger
@@ -14,10 +15,16 @@ from collections import defaultdict, namedtuple
 RDLogger.DisableLog('rdApp.error')
 
 # Load the predictor model
-try:
-    predictor_model = joblib.load("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/scripts/model.pkl")
-except Exception as e:
-    predictor_model = None
+#try:
+#    predictor_model = joblib.load("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/scripts/model.pkl")
+#except Exception as e:
+#    raise ValueError("model not found")
+#    predictor_model = None
+
+def cli():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", required=True, help="Path to model file .pkl")
+    return parser.parse_args()
 
 # Define the reaction SMARTS pattern
 pk_reaction = '[S][C:2](=[O:3])([*:4]).[S:5][C:6](=[O:7])[*:8][C](=[O])[O]>>[S:5][C:6](=[O:7])[*:8][C:2](=[O:3])([*:4])'
@@ -153,7 +160,7 @@ class MCTS:
 
         return max(self.children[node], key=score)
 
-    def do_rollout(self, node: Node) -> None:
+    def do_rollout(self, node: Node, predictor_model) -> None:
         """
         Make the tree one layer better. (Train for one iteration.)
 
@@ -161,8 +168,8 @@ class MCTS:
         """
         path = self._select(node)
         leaf = path[-1]
-        self._expand(leaf)
-        reward = self._simulate(leaf)
+        self._expand(leaf, predictor_model)
+        reward = self._simulate(leaf, predictor_model)
         self._backpropagate(path, reward)
 
     def _select(self, node: Node) -> ty.List[Node]:
@@ -190,7 +197,7 @@ class MCTS:
 
             node = self._uct_select(node)  # Descend a layer deeper.
 
-    def _expand(self, node: Node) -> None:
+    def _expand(self, node: Node, predictor_model) -> None:
         """
         Update the `children` dict with the children of `node`.
 
@@ -199,9 +206,9 @@ class MCTS:
         if node in self.children:
             return  # Already expanded.
 
-        self.children[node] = node.find_children()
+        self.children[node] = node.find_children(predictor_model)
 
-    def _simulate(self, node: Node) -> float:
+    def _simulate(self, node: Node, predictor_model) -> float:
         """
         Returns the reward for a random simulation (to completion) of `node`.
 
@@ -214,7 +221,7 @@ class MCTS:
                 reward = node.reward(predictor_model)
                 return reward
 
-            node = node.find_random_child()
+            node = node.find_random_child(predictor_model)
 
     def _backpropagate(self, path: ty.List[Node], reward: float) -> None:
         """
@@ -257,7 +264,7 @@ _MOL = namedtuple("Molecule", "SMILES pred_value terminal num_adds")
 
 class Molecule(_MOL, Node):
 
-    def find_children(mol) -> ty.Set["Molecule"]:
+    def find_children(mol, predictor_model) -> ty.Set["Molecule"]:
         """
         All possible successors of this molecule state.
 
@@ -274,17 +281,17 @@ class Molecule(_MOL, Node):
 
             # make a progression using each of the extender unions
             for submol in extenders:
-                children |= mol.make_progress(submol, cyc_reactions)
+                children |= mol.make_progress(submol, cyc_reactions, predictor_model)
 
         #if mol had not started
         if not mol.SMILES :
             for submol in starters:
-                children |= mol.make_progress(submol, cyc_reactions)
+                children |= mol.make_progress(submol, cyc_reactions, predictor_model)
 
         return children
 
 
-    def find_random_child(mol) -> "Molecule":
+    def find_random_child(mol, predictor_model) -> "Molecule":
         """
         Random successor of this mol state (for more efficient simulation).
 
@@ -304,7 +311,7 @@ class Molecule(_MOL, Node):
             possible_sub_ads = extenders
 
         # otherwise, make a progress in the molecule object
-        possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions)
+        possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions, predictor_model)
         #print(possible_children)
         possible_child = choice(list(possible_children))
         #print(possible_child)
@@ -318,29 +325,21 @@ class Molecule(_MOL, Node):
         :param predictor: Predictor model used
         :rtype: float
         """
-        #obtain the fp of mol
-        #str_SMILES = mol.SMILES
-        #if str_SMILES is None:
-        #    return 0.0
-        if predictor is not None:
-            # obtain the fp of mol
-            str_SMILES = mol.SMILES
-            if str_SMILES is None:
-                return -1.0
 
-            molec = Chem.MolFromSmiles(str_SMILES)
-            fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
-            mol_fingerprint = list(fp)
+        # obtain the fp of mol
+        str_SMILES = mol.SMILES
+        if str_SMILES is None:
+            return -1.0
 
-            # calculate predicitve value of the fp
-            #make notice that proba returns the probs of each class: 0 (non-antibiotic), 1(antibiotic), and possible additional (non-relevant)
-            predictive_value = predictor_model.predict_proba([mol_fingerprint])[0][1]
-            return predictive_value
-        else:
-            #return 0.0 number
-            predictive_value = 0.0
-            #print(predictive_value)
-            return predictive_value
+        molec = Chem.MolFromSmiles(str_SMILES)
+        fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
+        mol_fingerprint = list(fp)
+
+        # calculate predicitve value of the fp
+        #make notice that proba returns the probs of each class: 0 (non-antibiotic), 1(antibiotic), and possible additional (non-relevant)
+        predictive_value = predictor.predict_proba([mol_fingerprint])[0][1]
+        return predictive_value
+
 
 
     def linear_add(mol, subunit: str) -> str:
@@ -429,7 +428,7 @@ class Molecule(_MOL, Node):
 
 
 
-    def make_progress(mol, subunit: str, reactions: ty.List[str]) -> ty.Set["Molecule"]:
+    def make_progress(mol, subunit: str, reactions: ty.List[str], predictor_model) -> ty.Set["Molecule"]:
 
         """
         Return a set of mol instances with one addition made and cyclization events made.
@@ -501,7 +500,7 @@ def new_mol() -> Molecule:
     return mol
 
 
-def gen_molecule() -> Molecule:
+def gen_molecule(predictor_model) -> Molecule:
     """
     Generates a molecule
     """
@@ -516,7 +515,7 @@ def gen_molecule() -> Molecule:
                 break
             # if mol is not terminal do rollout
             else:
-                tree.do_rollout(mol)
+                tree.do_rollout(mol, predictor_model)
 
 
         mol = tree.choose(mol)
@@ -535,6 +534,13 @@ def main() -> None:
     :param num_desired: The number of molecules with pred_value = 1.0 desired
     :type num_desired: int
     """
+    args = cli()
+
+
+    predictor_model = joblib.load(args.model)
+
+
+
     # turn RDKit warnings off.
     Chem.rdBase.DisableLog("rdApp.error")
 
@@ -542,7 +548,7 @@ def main() -> None:
     generated_molecules = []
     num_desired = 2
     while len(generated_molecules) < num_desired:
-        mol = gen_molecule()
+        mol = gen_molecule(predictor_model)
         if mol.pred_value >= 0.9:
             generated_molecules.append(mol)
 
