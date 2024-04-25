@@ -1,6 +1,6 @@
 import warnings
 import argparse
-import time
+#import time
 import random
 import joblib
 from rdkit import Chem, RDLogger
@@ -20,7 +20,7 @@ warnings.filterwarnings('ignore')
 RDLogger.DisableLog('rdApp.error')
 
 #set time
-start_time = time.time()
+#start_time = time.time()
 
 def cli()-> argparse.Namespace:
     """
@@ -571,10 +571,10 @@ def main() -> None:
                 if num_mols < num_wanted:
                     generated_molecules.write('\n')
 
-    end_time = time.time()
-    execution_time = end_time - start_time
+    #end_time = time.time()
+    #execution_time = end_time - start_time
 
-    print(f"El script tardó {execution_time} segundos en ejecutarse.")
+    #print(f"El script tardó {execution_time} segundos en ejecutarse.")
 
     print(f"{num_mols} molecules with pred_value >= {pred_limit} generated and saved to {output_file}")
 
