@@ -518,7 +518,7 @@ def gen_molecule(predictor_model) -> Molecule:
 
     while True:
         # train as we go, do X rollouts
-        for i in range(3):
+        for i in range(1):
             # if the mol is terminal do not rollout
             if mol.terminal:
                 break
