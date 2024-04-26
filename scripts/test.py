@@ -1,4 +1,3 @@
-test='okay'
 import warnings
 import argparse
 import time
