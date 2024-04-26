@@ -135,7 +135,7 @@ class MCTS:
     Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
     """
 
-    def __init__(self, exploration_weight: int = 0.5) -> None:
+    def __init__(self, exploration_weight: int = 0.25) -> None:
         """
         Initialize Monte Carlo tree searcher.
 
