@@ -410,8 +410,8 @@ class Molecule(_MOL, Node):
         except ValueError as e:
             None
 
-        if unique_outputs != set():
-            return unique_outputs
+        #if unique_outputs != set():
+        return unique_outputs
 
 
     def check_terminal(mol) -> bool:
