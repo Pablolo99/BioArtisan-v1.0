@@ -400,7 +400,7 @@ class Molecule(_MOL, Node):
             #iterate through each result and add to the
             for result in results:
                 for molec in result:
-                    #Chem.SanitizeMol(molec)
+                    Chem.SanitizeMol(molec)
                     unique_outputs.add(Chem.MolToSmiles(molec))
 
         except ValueError as e:
