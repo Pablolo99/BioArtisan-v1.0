@@ -1,6 +1,7 @@
 import warnings
 import argparse
 import time
+import pstats
 import random
 import joblib
 import cProfile
@@ -580,3 +581,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     cProfile.run("main()", "profile_output.txt")
+    stats = pstats.Stats("profile_output.txt")
+    stats.strip_dirs()
+    stats.sort_stats("cumulative")
+    stats.print_stats()
