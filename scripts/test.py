@@ -399,6 +399,7 @@ class Molecule(_MOL, Node):
             #iterate through each result and add to the
             for result in results:
                 for molec in result:
+                    Chem.SanitizeMol(molec)
                     print(Chem.MolToSmiles(molec))
             unique_outputs = {Chem.MolToSmiles(molec) for result in results for molec in result}
             #for result in results:
