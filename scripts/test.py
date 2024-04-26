@@ -397,7 +397,9 @@ class Molecule(_MOL, Node):
             # Run the reaction
             results = rxn.RunReactants([inmol])
             #iterate through each result and add to the
-            print(Chem.MolToSmiles(molec) for result in results for molec in result)
+            for result in results:
+                for molec in result:
+                    print(Chem.MolToSmiles(molec))
             unique_outputs = {Chem.MolToSmiles(molec) for result in results for molec in result}
             #for result in results:
             #    for molec in result:
