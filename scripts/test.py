@@ -391,29 +391,23 @@ class Molecule(_MOL, Node):
         """
         smiles_mol = mol.SMILES
         inmol = Chem.MolFromSmiles(smiles_mol)
+        unique_outputs = set()
 
         rxn = rdChemReactions.ReactionFromSmarts(reaction)
         try:
             # Run the reaction
             results = rxn.RunReactants([inmol])
             #iterate through each result and add to the
-            #for result in results:
-            #    for molec in result:
-            #        Chem.SanitizeMol(molec)
-            #        print(Chem.MolToSmiles(molec))
-            unique_outputs = {Chem.MolToSmiles(molec) for result in results for molec in result}
-            return unique_outputs
-            #for result in results:
-            #    for molec in result:
-            #        Chem.SanitizeMol(molec)
-            #        unique_outputs.add(Chem.MolToSmiles(molec))
+            for result in results:
+                for molec in result:
+                    Chem.SanitizeMol(molec)
+                    unique_outputs.add(Chem.MolToSmiles(molec))
 
         except ValueError as e:
             None
 
-        #if unique_outputs != set():
-        #return unique_outputs
-
+        if unique_outputs != set():
+            return unique_outputs
 
     def check_terminal(mol) -> bool:
         """
@@ -560,20 +554,20 @@ def main() -> None:
     RDLogger.DisableLog('rdApp.error')
 
     # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
-    with open(output_file, 'w') as generated_molecules:
+    with open(output_file, 'a') as generated_molecules:
         generated_molecules.write("ID\tSMILES\tpred_value\n")
 
         num_mols = 0
 
-        while num_mols < num_wanted:
-            mol = gen_molecule(predictor_model)
-            if mol.pred_value >= pred_limit:
-                print(mol)
-                #write info in tsv format
+    while num_mols < num_wanted:
+        mol = gen_molecule(predictor_model)
+        if mol.pred_value >= pred_limit:
+            #write info in tsv format
+            with open(output_file, 'a') as generated_molecules:
                 generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
-                num_mols += 1
                 if num_mols < num_wanted:
                     generated_molecules.write('\n')
+                num_mols += 1
 
     end_time = time.time()
     execution_time = end_time - start_time
