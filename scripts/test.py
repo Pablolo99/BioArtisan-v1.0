@@ -3,6 +3,7 @@ import argparse
 import time
 import random
 import joblib
+import cProfile
 from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, rdChemReactions
 from rdkit.Chem import MolFromSmiles, MolToSmiles
@@ -578,4 +579,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    cProfile.run("main()", "profile_output.txt")
