@@ -391,17 +391,13 @@ class Molecule(_MOL, Node):
         """
         smiles_mol = mol.SMILES
         inmol = Chem.MolFromSmiles(smiles_mol)
-        unique_outputs = set()
 
         rxn = rdChemReactions.ReactionFromSmarts(reaction)
         try:
             # Run the reaction
             results = rxn.RunReactants([inmol])
             #iterate through each result and add to the
-            for result in results:
-                for molec in result:
-                    #Chem.SanitizeMol(molec)
-                    unique_outputs.add(Chem.MolToSmiles(molec))
+            unique_outputs = {Chem.MolToSmiles(molec) for result in results for molec in result}
 
         except ValueError as e:
             None
