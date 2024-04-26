@@ -563,7 +563,7 @@ def main() -> None:
         mol = gen_molecule(predictor_model)
         if mol.pred_value >= pred_limit:
             #write info in tsv format
-            with open(output_file, 'w') as generated_molecules:
+            with open(output_file, 'a') as generated_molecules:
                 generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
                 if num_mols < num_wanted:
                     generated_molecules.write('\n')
