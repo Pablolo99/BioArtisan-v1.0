@@ -402,6 +402,7 @@ class Molecule(_MOL, Node):
                     Chem.SanitizeMol(molec)
                     print(Chem.MolToSmiles(molec))
             unique_outputs = {Chem.MolToSmiles(molec) for result in results for molec in result}
+            return unique_outputs
             #for result in results:
             #    for molec in result:
             #        Chem.SanitizeMol(molec)
@@ -411,7 +412,7 @@ class Molecule(_MOL, Node):
             None
 
         #if unique_outputs != set():
-        return unique_outputs
+        #return unique_outputs
 
 
     def check_terminal(mol) -> bool:
