@@ -185,7 +185,7 @@ class MCTS:
         """
         Find an unexplored descendent of `node`.
 
-        :param Node node: Node to select from.
+          :param Node node: Node to select from.
         :return: The path to the selected node.
         :rtype: ty.List[Node]
         """
@@ -536,8 +536,6 @@ def main() -> None:
     """
     Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
 
-    :param num_desired: The number of molecules with pred_value = 1.0 desired
-    :type num_desired: int
     """
 
     # set the arguments from terminal line
