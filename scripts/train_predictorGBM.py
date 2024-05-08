@@ -85,6 +85,10 @@ def main() -> None:
     # parse data
     X, y = parse_data(args.input, args.h)
 
+    unique_classes = np.unique(y)
+    num_classes = len(unique_classes)
+    print("Unique classes:", unique_classes)
+    print("Number of classes:", num_classes)
     # print dimensionality of data
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
@@ -93,7 +97,9 @@ def main() -> None:
     param_grid_gbm = {
         'n_estimators': [100, 500, 1000],
         'max_depth': [3, 5, 10],
-        'loss': ['deviance', 'exponential']
+        'loss': ['deviance',
+                 #'exponential',
+        'log_loss']
     }
 
     # initialize GBM classifier
