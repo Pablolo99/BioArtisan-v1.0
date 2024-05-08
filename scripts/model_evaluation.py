@@ -1,20 +1,19 @@
 #!/usr/bin/env pyton3
 """
 Description:    Train predictors to predict the activity of a molecule.
-Usage:          python train_predictors.py -i data/train.csv -o output/ [OPTIONS]
+Usage:          python model_evaluation.py -i data/train.csv -o output/ [OPTIONS]
 """
 import argparse
-import joblib
 import typing as ty
-import os
 import pandas as pd
 import numpy as np
+
 from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 
@@ -82,13 +81,34 @@ def train_models(clusters_dic: dict) -> ty.List[dict]:
     """"""
     # train and evaluate models for different algorithms for each cluster
     models = {
-        "RandomForest": RandomForestClassifier(max_depth=5, n_estimators=100, n_jobs=-1),
-        "SVM": SVC(kernel='linear'),
-        "GBM": GradientBoostingClassifier(loss='log_loss', n_estimators=100, max_depth=3),
-        "KNN": KNeighborsClassifier(n_neighbors=5, leaf_size=30)
+        "RandomForest": RandomForestClassifier(),
+        "SVM": SVC(),
+        #"GBM": GradientBoostingClassifier(),
+        "KNN": KNeighborsClassifier()
     }
 
     results = []
+
+    # define parameter grids for grid search
+    param_grids = {
+        "RandomForest": {
+            'max_depth': [5, 20, 50, 100],
+            'n_estimators': [100, 500, 1000]
+        },
+        "SVM": {
+            'C': [0.1, 1, 10, 100],
+            'kernel': ['linear', 'rbf', 'poly', 'sigmoid']
+        },
+        "GBM": {
+            'loss': ['deviance', 'exponential'],
+            'n_estimators': [100, 200, 300],
+            'max_depth': [3, 5, 10]
+        },
+        "KNN": {
+            'n_neighbors': [3, 5, 10],
+            'leaf_size': [20, 30, 50]
+        }
+    }
 
     # divide in train and test clusters
     for test_cluster, (test_X, test_y) in clusters_dic.items():
@@ -109,7 +129,15 @@ def train_models(clusters_dic: dict) -> ty.List[dict]:
         #evaluate each model
         for model_name in models.keys():
             model = models[model_name]
-            model.fit(train_X, train_y)
+            param_grid = param_grids[model_name]
+
+            # perform grid search with 5-fold cross-validation
+            grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+            grid_search.fit(train_X, train_y)
+
+            best_model = grid_search.best_estimator_
+
+            best_model.fit(train_X, train_y)
             y_pred = model.predict(test_X)
             accuracy = accuracy_score(test_y, y_pred)
             cluster_results[model_name] = accuracy

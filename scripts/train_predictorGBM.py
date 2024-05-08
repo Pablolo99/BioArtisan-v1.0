@@ -93,7 +93,7 @@ def main() -> None:
     param_grid_gbm = {
         'n_estimators': [100, 500, 1000],
         'max_depth': [3, 5, 10],
-        'learning_rate': [0.001, 0.01, 0.1]
+        'loss': ['deviance', 'exponential']
     }
 
     # initialize GBM classifier
