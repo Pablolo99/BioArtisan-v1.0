@@ -10,7 +10,7 @@ import typing as ty
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 
 def cli() -> argparse.Namespace:
@@ -89,34 +89,35 @@ def main() -> None:
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
 
-    # Define parameter grid for GBM
-    param_grid_gbm = {
-        'n_estimators': [100, 500, 1000],
-        'max_depth': [3, 5, 10],
-        'learning_rate': [0.001, 0.01, 0.1]
+    # Define parameter grid for KNN
+    param_grid_knn = {
+        'n_neighbors': [2, 3, 5, 7, 9],
+        'weights': ['uniform', 'distance'],
+        'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute']
     }
 
-    # Initialize GBM classifier
-    gbm = GradientBoostingClassifier()
+    # Initialize KNN classifier
+    knn = KNeighborsClassifier()
 
     # Perform grid search with 5-fold cross-validation
-    grid_search_gbm = GridSearchCV(estimator=gbm, param_grid=param_grid_gbm, cv=5)
-    grid_search_gbm.fit(X, y)
+    grid_search_knn = GridSearchCV(estimator=knn, param_grid=param_grid_knn, cv=5)
+    grid_search_knn.fit(X, y)
 
     # Get the best parameters and score
-    best_params_gbm = grid_search_gbm.best_params_
-    best_score_gbm = grid_search_gbm.best_score_
+    best_params_knn = grid_search_knn.best_params_
+    best_score_knn = grid_search_knn.best_score_
 
-    print("Best parameters for GBM:", best_params_gbm)
-    print("Best score for GBM:", best_score_gbm)
+    print("Best parameters for KNN:", best_params_knn)
+    print("Best score for KNN:", best_score_knn)
 
-    # Save the best GBM model
-    best_model_gbm = grid_search_gbm.best_estimator_
-    output_path_gbm = f"{args.output}/model_GBM.pkl"
-    print(f"Saving best GBM model to {output_path_gbm}...")
-    joblib.dump(best_model_gbm, output_path_gbm)
+    # Save the best KNN model
+    best_model_knn = grid_search_knn.best_estimator_
+    output_path_knn = f"{args.output}/model_KNN.pkl"
+    print(f"Saving best KNN model to {output_path_knn}...")
+    joblib.dump(best_model_knn, output_path_knn)
 
     exit(0)
+
 
 if __name__ == "__main__":
     main()

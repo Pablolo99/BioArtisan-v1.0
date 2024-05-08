@@ -11,7 +11,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
 
 
 def cli() -> argparse.Namespace:
@@ -86,39 +86,31 @@ def main() -> None:
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
 
-    # Pick best settings random forest model with 5-fold cross validation.
-    max_depth = [5, 20, 50, 100]
-    estimators = [100, 500, 1000]
+    # Define parameter grid for Random Forest
+    param_grid_rf = {
+        'max_depth': [5, 20, 50, 100],
+        'n_estimators': [100, 500, 800, 1000]
+    }
 
-    best_score = 0
-    best_depth = 0
-    best_estimators = 0
+    # Initialize Random Forest classifier
+    rf = RandomForestClassifier()
 
-    for depth in max_depth:
-        for estimator in estimators:
-            print(f"Training random forest with max_depth={depth} and n_estimators={estimator}...")
-            model = RandomForestClassifier(max_depth=depth, n_estimators=estimator, n_jobs=-1)
-            scores = cross_val_score(model, X, y, cv=5)
-            score = np.mean(scores)
-            print(f"Score: {score}")
+    # Perform grid search with 5-fold cross-validation
+    grid_search_rf = GridSearchCV(estimator=rf, param_grid=param_grid_rf, cv=5)
+    grid_search_rf.fit(X, y)
 
-            if score > best_score:
-                best_score = score
-                best_depth = depth
-                best_estimators = estimator
+    # Get the best parameters and score
+    best_params_rf = grid_search_rf.best_params_
+    best_score_rf = grid_search_rf.best_score_
 
-    print(f"Best score: {best_score}")
-    print(f"Best depth: {best_depth}")
-    print(f"Best estimators: {best_estimators}")
+    print("Best parameters for Random Forest:", best_params_rf)
+    print("Best score for Random Forest:", best_score_rf)
 
-    # Train model with best settings.
-    print(f"Training random forest with max_depth={best_depth} and n_estimators={best_estimators}...")
-    model = RandomForestClassifier(max_depth=best_depth, n_estimators=best_estimators, n_jobs=-1)
-    model.fit(X, y)
-
-    # Save model.
-    print(f"Saving model to {args.output}...")
-    joblib.dump(model, f"{args.output}/model_RF.pkl")
+    # Save the best Random Forest model
+    best_model_rf = grid_search_rf.best_estimator_
+    output_path_rf = f"{args.output}/model_RF.pkl"
+    print(f"Saving best Random Forest model to {output_path_rf}...")
+    joblib.dump(best_model_rf, output_path_rf)
 
     exit(0)
 
