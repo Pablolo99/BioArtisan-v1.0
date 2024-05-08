@@ -10,7 +10,7 @@ import typing as ty
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
-from sklearn.svm import SVC
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import GridSearchCV
 
 def cli() -> argparse.Namespace:
@@ -89,31 +89,34 @@ def main() -> None:
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
 
-    # Define parameter grid
-    param_grid_svm = {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'poly', 'sigmoid']}
+    # Define parameter grid for GBM
+    param_grid_gbm = {
+        'n_estimators': [100, 250, 500, 1000],
+        'max_depth': [3, 5, 8, 10],
+        'learning_rate': [0.001, 0.01, 0.1]
+    }
 
-    # Initialize SVM classifier
-    svm = SVC()
+    # Initialize GBM classifier
+    gbm = GradientBoostingClassifier()
 
     # Perform grid search with 5-fold cross-validation
-    grid_search_svm = GridSearchCV(estimator=svm, param_grid=param_grid_svm, cv=5)
-    grid_search_svm.fit(X, y)
+    grid_search_gbm = GridSearchCV(estimator=gbm, param_grid=param_grid_gbm, cv=5)
+    grid_search_gbm.fit(X, y)
 
     # Get the best parameters and score
-    best_params_svm = grid_search_svm.best_params_
-    best_score_svm = grid_search_svm.best_score_
+    best_params_gbm = grid_search_gbm.best_params_
+    best_score_gbm = grid_search_gbm.best_score_
 
-    print("Best parameters for SVM:", best_params_svm)
-    print("Best score for SVM:", best_score_svm)
+    print("Best parameters for GBM:", best_params_gbm)
+    print("Best score for GBM:", best_score_gbm)
 
-    # Save model.
-    best_model_svm = grid_search_svm.best_estimator_
-    output_path_svm = f"{args.output}/model_SVM.pkl"
-    print(f"Saving best SVM model to {output_path_svm}...")
-    joblib.dump(best_model_svm, output_path_svm)
+    # Save the best GBM model
+    best_model_gbm = grid_search_gbm.best_estimator_
+    output_path_gbm = f"{args.output}/model_GBM.pkl"
+    print(f"Saving best GBM model to {output_path_gbm}...")
+    joblib.dump(best_model_gbm, output_path_gbm)
 
     exit(0)
-
 
 if __name__ == "__main__":
     main()
