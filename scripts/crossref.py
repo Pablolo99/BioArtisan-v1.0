@@ -151,21 +151,23 @@ def add_np_column(file_path1, file_path2, output_path, np):
 
 
 def main():
+    # turn RDKit warnings off
+    Chem.rdBase.DisableLog("rdApp.*")
 
-    #Parse command line argument
+    #parse command line argument
     args = cli()
     file1 = args.input1
     file2 = args.input2
     np = args.natural_product
     output_path = args.output
 
-    #Convert tsv file to csv
+    #convert tsv file to csv
     file2_csv = tsv_to_csv(file2)
 
-    #Filter csv by np
+    #filter csv by np
     filtered_csv = filter_np(file2_csv,np)
 
-    #Add natural product column to the information of file1
+    #add natural product column to the information of file1
     add_np_column(file1, filtered_csv, output_path, np)
 
 
