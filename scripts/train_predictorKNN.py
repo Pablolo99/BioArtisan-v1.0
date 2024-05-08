@@ -1,7 +1,7 @@
 #!/usr/bin/env pyton3
 """
 Description:    Train a predictor to predict the activity of a molecule.
-Usage:          python train_predictorSVM.py -i data/train.csv -o output/ [OPTIONS]
+Usage:          python train_predictorKNN.py -i data/train.csv -o output/ [OPTIONS]
 """
 import argparse
 import joblib
@@ -64,53 +64,53 @@ def parse_data(path: str, header: bool) -> ty.Tuple[np.ndarray, np.ndarray]:
         for i, line in enumerate(file_open):
             _, smiles, label, type = line.strip().split(",")
 
-            # Parse SMILES.
+            # parse SMILES
             mol = Chem.MolFromSmiles(smiles)
             fp = mol_to_fingerprint(mol, 2, 2048)
             data = np.vstack((data, fp)) if data.size else fp
 
-            # Parse label.
+            # parse label
             labels = np.append(labels, int(label))
 
     return data, labels
 
 
 def main() -> None:
-    # Turn RDKit warnings off.
+    # turn RDKit warnings off
     Chem.rdBase.DisableLog("rdApp.*")
 
-    # Parse command line arguments.
+    # parse command line arguments
     args = cli()
 
-    # Parse data.
+    # parse data
     X, y = parse_data(args.input, args.h)
 
-    # Print dimensionality of data.
+    # print dimensionality of data
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
 
-    # Define parameter grid for KNN
+    # define parameter grid for KNN
     param_grid_knn = {
         'n_neighbors': [2, 3, 5, 7, 9],
         'weights': ['uniform', 'distance'],
         'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute']
     }
 
-    # Initialize KNN classifier
+    # initialize KNN classifier
     knn = KNeighborsClassifier()
 
-    # Perform grid search with 5-fold cross-validation
+    # perform grid search with 5-fold cross-validation
     grid_search_knn = GridSearchCV(estimator=knn, param_grid=param_grid_knn, cv=5)
     grid_search_knn.fit(X, y)
 
-    # Get the best parameters and score
+    # get the best parameters and score
     best_params_knn = grid_search_knn.best_params_
     best_score_knn = grid_search_knn.best_score_
 
     print("Best parameters for KNN:", best_params_knn)
     print("Best score for KNN:", best_score_knn)
 
-    # Save the best KNN model
+    # save the best KNN model
     best_model_knn = grid_search_knn.best_estimator_
     output_path_knn = f"{args.output}/model_KNN.pkl"
     print(f"Saving best KNN model to {output_path_knn}...")

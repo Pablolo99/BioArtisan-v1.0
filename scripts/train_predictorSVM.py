@@ -64,49 +64,49 @@ def parse_data(path: str, header: bool) -> ty.Tuple[np.ndarray, np.ndarray]:
         for i, line in enumerate(file_open):
             _, smiles, label, type = line.strip().split(",")
 
-            # Parse SMILES.
+            # parse SMILES
             mol = Chem.MolFromSmiles(smiles)
             fp = mol_to_fingerprint(mol, 2, 2048)
             data = np.vstack((data, fp)) if data.size else fp
 
-            # Parse label.
+            # parse labels
             labels = np.append(labels, int(label))
 
     return data, labels
 
 
 def main() -> None:
-    # Turn RDKit warnings off.
+    # turn RDKit warnings off
     Chem.rdBase.DisableLog("rdApp.*")
 
-    # Parse command line arguments.
+    # parse command line arguments
     args = cli()
 
-    # Parse data.
+    # parse data
     X, y = parse_data(args.input, args.h)
 
-    # Print dimensionality of data.
+    # print dimensionality of data
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
 
-    # Define parameter grid
+    # define parameter grid for SVM
     param_grid_svm = {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'poly', 'sigmoid']}
 
     # Initialize SVM classifier
     svm = SVC()
 
-    # Perform grid search with 5-fold cross-validation
+    # perform grid search with 5-fold cross-validation
     grid_search_svm = GridSearchCV(estimator=svm, param_grid=param_grid_svm, cv=5)
     grid_search_svm.fit(X, y)
 
-    # Get the best parameters and score
+    # get the best parameters and score
     best_params_svm = grid_search_svm.best_params_
     best_score_svm = grid_search_svm.best_score_
 
     print("Best parameters for SVM:", best_params_svm)
     print("Best score for SVM:", best_score_svm)
 
-    # Save model.
+    # save model
     best_model_svm = grid_search_svm.best_estimator_
     output_path_svm = f"{args.output}/model_SVM.pkl"
     print(f"Saving best SVM model to {output_path_svm}...")

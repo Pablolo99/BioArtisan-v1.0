@@ -62,51 +62,51 @@ def parse_data(path: str, header: bool) -> ty.Tuple[np.ndarray, np.ndarray]:
         for i, line in enumerate(file_open):
             _, smiles, label, type = line.strip().split(",")
 
-            # Parse SMILES.
+            # parse SMILES
             mol = Chem.MolFromSmiles(smiles)
             fp = mol_to_fingerprint(mol, 2, 2048)
             data = np.vstack((data, fp)) if data.size else fp
 
-            # Parse label.
+            # parse labels
             labels = np.append(labels, int(label))
 
     return data, labels
 
 def main() -> None:
-    # Turn RDKit warnings off.
+    # turn RDKit warnings off
     Chem.rdBase.DisableLog("rdApp.*")
 
-    # Parse command line arguments.
+    # parse command line arguments
     args = cli()
 
-    # Parse data.
+    # parse data
     X, y = parse_data(args.input, args.h)
 
-    # Print dimensionality of data.
+    # print dimensionality of data
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
 
-    # Define parameter grid for Random Forest
+    # define parameter grid for RF
     param_grid_rf = {
         'max_depth': [5, 20, 50, 100],
         'n_estimators': [100, 500, 800, 1000]
     }
 
-    # Initialize Random Forest classifier
+    # initialize RF classifier
     rf = RandomForestClassifier()
 
-    # Perform grid search with 5-fold cross-validation
+    # perform grid search with 5-fold cross-validation
     grid_search_rf = GridSearchCV(estimator=rf, param_grid=param_grid_rf, cv=5)
     grid_search_rf.fit(X, y)
 
-    # Get the best parameters and score
+    # get the best parameters and score
     best_params_rf = grid_search_rf.best_params_
     best_score_rf = grid_search_rf.best_score_
 
     print("Best parameters for Random Forest:", best_params_rf)
     print("Best score for Random Forest:", best_score_rf)
 
-    # Save the best Random Forest model
+    # save the best RF model
     best_model_rf = grid_search_rf.best_estimator_
     output_path_rf = f"{args.output}/model_RF.pkl"
     print(f"Saving best Random Forest model to {output_path_rf}...")

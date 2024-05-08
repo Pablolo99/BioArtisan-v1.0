@@ -1,7 +1,7 @@
 #!/usr/bin/env pyton3
 """
 Description:    Train a predictor to predict the activity of a molecule.
-Usage:          python train_predictorSVM.py -i data/train.csv -o output/ [OPTIONS]
+Usage:          python train_predictorGBM.py -i data/train.csv -o output/ [OPTIONS]
 """
 import argparse
 import joblib
@@ -64,53 +64,53 @@ def parse_data(path: str, header: bool) -> ty.Tuple[np.ndarray, np.ndarray]:
         for i, line in enumerate(file_open):
             _, smiles, label, type = line.strip().split(",")
 
-            # Parse SMILES.
+            # parse SMILES
             mol = Chem.MolFromSmiles(smiles)
             fp = mol_to_fingerprint(mol, 2, 2048)
             data = np.vstack((data, fp)) if data.size else fp
 
-            # Parse label.
+            # parse labels
             labels = np.append(labels, int(label))
 
     return data, labels
 
 
 def main() -> None:
-    # Turn RDKit warnings off.
+    # turn RDKit warnings off
     Chem.rdBase.DisableLog("rdApp.*")
 
-    # Parse command line arguments.
+    # parse command line arguments
     args = cli()
 
-    # Parse data.
+    # parse data
     X, y = parse_data(args.input, args.h)
 
-    # Print dimensionality of data.
+    # print dimensionality of data
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
 
-    # Define parameter grid for GBM
+    # define parameter grid for GBM
     param_grid_gbm = {
         'n_estimators': [100, 500, 1000],
         'max_depth': [3, 5, 10],
         'learning_rate': [0.001, 0.01, 0.1]
     }
 
-    # Initialize GBM classifier
+    # initialize GBM classifier
     gbm = GradientBoostingClassifier()
 
-    # Perform grid search with 5-fold cross-validation
+    # perform grid search with 5-fold cross-validation
     grid_search_gbm = GridSearchCV(estimator=gbm, param_grid=param_grid_gbm, cv=5)
     grid_search_gbm.fit(X, y)
 
-    # Get the best parameters and score
+    # get the best parameters and score
     best_params_gbm = grid_search_gbm.best_params_
     best_score_gbm = grid_search_gbm.best_score_
 
     print("Best parameters for GBM:", best_params_gbm)
     print("Best score for GBM:", best_score_gbm)
 
-    # Save the best GBM model
+    # save the best GBM model
     best_model_gbm = grid_search_gbm.best_estimator_
     output_path_gbm = f"{args.output}/model_GBM.pkl"
     print(f"Saving best GBM model to {output_path_gbm}...")
