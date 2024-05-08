@@ -93,7 +93,7 @@ def train_models(clusters_dic: dict) -> ty.List[dict]:
     param_grids = {
         "RandomForest": {
             'max_depth': [5, 20, 50, 100],
-            'n_estimators': [100, 500, 1000]
+            'n_estimators': [100, 500, 800, 1000]
         },
         "SVM": {
             'C': [0.1, 1, 10, 100],
@@ -101,11 +101,13 @@ def train_models(clusters_dic: dict) -> ty.List[dict]:
         },
         "GBM": {
             'loss': ['deviance', 'exponential'],
-            'n_estimators': [100, 200, 300],
+            'n_estimators': [100, 500, 1000],
             'max_depth': [3, 5, 10]
         },
         "KNN": {
-            'n_neighbors': [3, 5, 10],
+            'n_neighbors': [2, 3, 5, 7, 9],
+            'weights': ['uniform', 'distance'],
+            'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
             'leaf_size': [20, 30, 50]
         }
     }

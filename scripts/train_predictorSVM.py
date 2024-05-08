@@ -90,7 +90,10 @@ def main() -> None:
     print(f"y: {y.shape}")
 
     # define parameter grid for SVM
-    param_grid_svm = {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'poly', 'sigmoid']}
+    param_grid_svm = {
+        'C': [0.1, 1, 10, 100],
+        'kernel': ['linear', 'rbf', 'poly', 'sigmoid']
+    }
 
     # Initialize SVM classifier
     svm = SVC()

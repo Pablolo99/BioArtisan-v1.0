@@ -93,7 +93,8 @@ def main() -> None:
     param_grid_knn = {
         'n_neighbors': [2, 3, 5, 7, 9],
         'weights': ['uniform', 'distance'],
-        'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute']
+        'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
+        'leaf_size': [20, 30, 50]
     }
 
     # initialize KNN classifier
