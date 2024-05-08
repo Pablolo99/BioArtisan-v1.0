@@ -60,7 +60,7 @@ def parse_data(path: str, header: bool) -> ty.Tuple[np.ndarray, np.ndarray]:
             file_open.readline()
 
         for i, line in enumerate(file_open):
-            _, smiles, label = line.strip().split(",")
+            _, smiles, label, type = line.strip().split(",")
 
             # Parse SMILES.
             mol = Chem.MolFromSmiles(smiles)
