@@ -73,8 +73,9 @@ def parse_data(path: str, header: bool) -> ty.Tuple[np.ndarray, np.ndarray]:
             # Parse label.
             labels = np.append(labels, int(label))
 
-            print(str(i), end="\r")
-
+            #print(str(i), end="\r")
+    print(data.__class__)
+    print(labels.__class__)
     return data, labels
 
 
@@ -87,7 +88,8 @@ def main() -> None:
 
     # Parse data.
     X, y = parse_data(args.input, args.h)
-
+    print(X)
+    print(y)
     # Print dimensionality of data.
     print(f"X: {X.shape}")
     print(f"y: {y.shape}")
@@ -124,7 +126,7 @@ def main() -> None:
 
     # Save model.
     print(f"Saving model to {args.output}...")
-    joblib.dump(model, f"{args.output}/model.pkl")
+    joblib.dump(model, f"{args.output}/model2.pkl")
 
     exit(0)
 

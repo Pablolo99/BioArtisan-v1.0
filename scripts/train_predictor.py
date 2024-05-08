@@ -12,6 +12,8 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+
 
 def cli() -> argparse.Namespace:
     """
@@ -21,7 +23,7 @@ def cli() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", type=str, required=True, help="Training data in csv format, with individual lines formatted as 'id,smiles,0/1'.")
+    parser.add_argument("-i", "--input", type=str, required=True, help="Training data in csv format, with individual lines formatted as 'id,smiles,antibacterial,Polyketide'.")
     parser.add_argument("--h", "--header", action="store_true", help="Flag to indicate if csv file has header.")
     parser.add_argument("-o", "--output", type=str, required=True, help="Output dir.")
     return parser.parse_args()
@@ -69,8 +71,8 @@ def parse_data(path: str, header: bool) -> ty.Tuple[np.ndarray, np.ndarray]:
             # Parse label.
             labels = np.append(labels, int(label))
         
-            print(str(i), end="\r")
-    
+            #print(str(i), end="\r")
+
     return data, labels
 
 def main() -> None:
@@ -119,7 +121,7 @@ def main() -> None:
 
     # Save model.
     print(f"Saving model to {args.output}...")
-    joblib.dump(model, f"{args.output}/model.pkl")
+    joblib.dump(model, f"{args.output}/model2.pkl")
 
     exit(0)
 
