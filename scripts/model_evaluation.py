@@ -7,7 +7,7 @@ import argparse
 import typing as ty
 import pandas as pd
 import numpy as np
-
+import itertools
 from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
