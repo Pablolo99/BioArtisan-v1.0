@@ -212,7 +212,7 @@ def main() -> None:
     clusters_dic = parse_data(args.input, args.h)
 
     # train the models
-    results_models = train_models(clusters_dic)
+    results_models = train_models(clusters_dic, args.output)
 
     # create the plot
     plot_results(results_models, args.output)
