@@ -178,6 +178,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
     return results
 
+
 def plot_results(results: dict, output_dir: str):
     fig, ax = plt.subplots(figsize=(10, 6))
 
