@@ -4,10 +4,13 @@ Description:    Train predictors to predict the activity of a molecule.
 Usage:          python model_evaluation.py -i data/train.csv -o output/ [OPTIONS]
 """
 import argparse
-import typing as ty
+import os
 import pandas as pd
 import numpy as np
 import itertools
+import joblib
+import matplotlib.pyplot as plt
+
 from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -77,7 +80,7 @@ def parse_data(path: str, header: bool) -> dict:
     return clusters_dic
 
 
-def train_models(clusters_dic: dict) -> dict:
+def train_models(clusters_dic: dict, output_dir: str) -> dict:
     """"""
     # train and evaluate models for different algorithms for each cluster
     models = {
@@ -118,8 +121,10 @@ def train_models(clusters_dic: dict) -> dict:
         param_grid = param_grids[model_name]
 
         results[model_name] = {}
+        best_model = None
+        best_accuracy = 0.0
 
-        # Generate combinations of hyperparameters
+        # generate combinations of hyperparameters
         param_combinations = [dict(zip(param_grid.keys(), values)) for values in
                               itertools.product(*param_grid.values())]
 
@@ -149,52 +154,51 @@ def train_models(clusters_dic: dict) -> dict:
             avg_accuracy = np.mean(results[model_name][key])
             print(f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}")
 
+            #update the best model
+            if avg_accuracy > best_accuracy:
+                best_model = model
+                best_accuracy = avg_accuracy
+
+    # Store the best model
+    if best_model is not None:
+        output_path = os.path.join(output_dir, "best_model.pkl")
+        joblib.dump(best_model, output_path)
+        print(f"Storing the best model in: {output_path}")
+
+    # save results to CSV
+    csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
+    with open(csv_output_path, 'w') as f:
+        f.write("Model,Hyperparameters,Average Accuracy\n")
+        for model_name, model_params in results.items():
+            for param_name, param_values in model_params.items():
+                avg_accuracy = np.mean(param_values)
+                f.write(f"{model_name},{param_name},{avg_accuracy}\n")
+
+    print(f"Storing accuracy results in: {csv_output_path}")
+
     return results
 
-"""      
-        for params in param_grid.values():
-            for param_value in params:
-                results[model_name][str(param_value)] = []
+def plot_results(results: dict, output_dir: str):
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-        for test_cluster, (test_X, test_y) in clusters_dic.items():
-            train_X = []
-            train_y = []
+    models_colors = {'RandomForest': 'blue', 'GBM': 'red', 'SVM': 'green', 'KNN': 'orange'}
 
-            for cluster, (X, y) in clusters_dic.items():
-                if cluster != test_cluster:
-                    train_X.extend(X)
-                    train_y.extend(y)
-
-            train_X = np.array(train_X)
-            train_y = np.array(train_y)
-
-            #evaluate each model for each hyperparameter combination
-            for param_name, param_values in param_grid.items():
-                for value in param_values:
-                    param_set = {param_name: value}
-
-                    #perform grid search CV
-                    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
-                    grid_search.fit(train_X, train_y)
-
-                    best_model = grid_search.best_estimator_
-
-                    #evaluate the best model with test data
-                    y_pred = best_model.predict(test_X)
-                    accuracy = accuracy_score(test_y, y_pred)
-
-                    results[model_name][str(value)].append(accuracy)
-
-    #calculate average accuracy
-    avg_results = {}
     for model_name, model_params in results.items():
-        avg_results[model_name] = {}
-
         for param_name, param_values in model_params.items():
-            avg_results[model_name][param_name] = np.mean(param_values)
+            avg_accuracy = np.mean(param_values)
+            ax.bar(f"{model_name}_{param_name}", avg_accuracy, color=models_colors[model_name], label=model_name)
 
-    return avg_results
-"""
+    ax.set_xlabel('Model and Hyperparameters')
+    ax.set_ylabel('Average Accuracy')
+    ax.set_title('Average Accuracy of Models with Different Hyperparameters')
+    ax.legend()
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+
+    output_path = os.path.join(output_dir, "accuracy_plot.png")
+    plt.savefig(output_path)
+    print(f"Storing the accuracy plot in: {output_path}")
+
 
 def main() -> None:
     # turn RDKit warnings off.
@@ -209,13 +213,9 @@ def main() -> None:
     # train the models
     results_models = train_models(clusters_dic)
 
-    print(results_models)
-"""
-    # write results to csv file
-    with open(output_file, 'w', newline='') as csvfile:
-        fieldnames =
-    return results
-"""
+    # create the plot
+    plot_results(results_models, args.output)
+
 
 if __name__ == "__main__":
     main()
