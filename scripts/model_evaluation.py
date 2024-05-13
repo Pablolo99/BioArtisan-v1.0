@@ -77,7 +77,7 @@ def parse_data(path: str, header: bool) -> dict:
     return clusters_dic
 
 
-def train_models(clusters_dic: dict) -> ty.List[dict]:
+def train_models(clusters_dic: dict) -> dict:
     """"""
     # train and evaluate models for different algorithms for each cluster
     models = {
@@ -87,7 +87,7 @@ def train_models(clusters_dic: dict) -> ty.List[dict]:
         "KNN": KNeighborsClassifier()
     }
 
-    results = []
+    results = {}
 
     # define parameter grids for grid search
     param_grids = {
@@ -112,44 +112,86 @@ def train_models(clusters_dic: dict) -> ty.List[dict]:
         }
     }
 
-    # divide in train and test clusters
-    for test_cluster, (test_X, test_y) in clusters_dic.items():
-        train_X = []
-        train_y = []
+    #evaluate each model for each cluster
+    for model_name in models.keys():
+        model = models[model_name]
+        param_grid = param_grids[model_name]
 
-        for cluster, (X, y) in clusters_dic.items():
-            if cluster != test_cluster:
-                train_X.extend(X)
-                train_y.extend(y)
+        results[model_name] = {}
 
-        train_X = np.array(train_X)
-        train_y = np.array(train_y)
+        # Generate combinations of hyperparameters
+        param_combinations = [dict(zip(param_grid.keys(), values)) for values in
+                              itertools.product(*param_grid.values())]
 
-        # evaluate each model
-        cluster_results = {'Test Cluster': test_cluster}
+        for params in param_combinations:
+            key = '_'.join([f"{param}_{value}" for param, value in params.items()])
+            results[model_name][key] = []
 
-        #evaluate each model
-        for model_name in models.keys():
-            model = models[model_name]
-            param_grid = param_grids[model_name]
+            for test_cluster, (test_X, test_y) in clusters_dic.items():
+                train_X = []
+                train_y = []
 
-            # perform grid search with 5-fold cross-validation
-            grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
-            grid_search.fit(train_X, train_y)
+                for train_cluster, (X, y) in clusters_dic.items():
+                    if train_cluster != test_cluster:
+                        train_X.extend(X)
+                        train_y.extend(y)
 
-            best_model = grid_search.best_estimator_
+                train_X = np.array(train_X)
+                train_y = np.array(train_y)
 
-            best_model.fit(train_X, train_y)
-            y_pred = model.predict(test_X)
-            accuracy = accuracy_score(test_y, y_pred)
-            cluster_results[model_name] = accuracy
+                model.set_params(**params)
+                model.fit(train_X, train_y)
 
-        results.append(cluster_results)
+                y_pred = model.predict(test_X)
+                accuracy = accuracy_score(test_y, y_pred)
+                results[model_name][key].append(accuracy)
 
     return results
 
+"""      
+        for params in param_grid.values():
+            for param_value in params:
+                results[model_name][str(param_value)] = []
 
+        for test_cluster, (test_X, test_y) in clusters_dic.items():
+            train_X = []
+            train_y = []
 
+            for cluster, (X, y) in clusters_dic.items():
+                if cluster != test_cluster:
+                    train_X.extend(X)
+                    train_y.extend(y)
+
+            train_X = np.array(train_X)
+            train_y = np.array(train_y)
+
+            #evaluate each model for each hyperparameter combination
+            for param_name, param_values in param_grid.items():
+                for value in param_values:
+                    param_set = {param_name: value}
+
+                    #perform grid search CV
+                    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+                    grid_search.fit(train_X, train_y)
+
+                    best_model = grid_search.best_estimator_
+
+                    #evaluate the best model with test data
+                    y_pred = best_model.predict(test_X)
+                    accuracy = accuracy_score(test_y, y_pred)
+
+                    results[model_name][str(value)].append(accuracy)
+
+    #calculate average accuracy
+    avg_results = {}
+    for model_name, model_params in results.items():
+        avg_results[model_name] = {}
+
+        for param_name, param_values in model_params.items():
+            avg_results[model_name][param_name] = np.mean(param_values)
+
+    return avg_results
+"""
 
 def main() -> None:
     # turn RDKit warnings off.
