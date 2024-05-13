@@ -146,7 +146,10 @@ def train_models(clusters_dic: dict) -> dict:
                 accuracy = accuracy_score(test_y, y_pred)
                 results[model_name][key].append(accuracy)
 
-    return results
+            avg_accuracy = np.mean(results[model_name][key])
+            print(f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}")
+
+        return results
 
 """      
         for params in param_grid.values():
