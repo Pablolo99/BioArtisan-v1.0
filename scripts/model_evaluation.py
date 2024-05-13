@@ -100,7 +100,7 @@ def train_models(clusters_dic: dict) -> dict:
             'kernel': ['linear', 'rbf', 'poly', 'sigmoid']
         },
         "GBM": {
-            'loss': ['deviance', 'exponential'],
+            'loss': ['log_loss', 'exponential'],
             'n_estimators': [100, 500, 1000],
             'max_depth': [3, 5, 10]
         },
