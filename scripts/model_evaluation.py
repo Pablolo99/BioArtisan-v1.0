@@ -83,7 +83,7 @@ def train_models(clusters_dic: dict) -> dict:
     models = {
         "RandomForest": RandomForestClassifier(),
         "SVM": SVC(),
-        #"GBM": GradientBoostingClassifier(),
+        "GBM": GradientBoostingClassifier(),
         "KNN": KNeighborsClassifier()
     }
 
