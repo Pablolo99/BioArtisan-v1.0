@@ -158,12 +158,13 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
             if avg_accuracy > best_accuracy:
                 best_model = model
                 best_accuracy = avg_accuracy
+                best_hyperparameters = params
 
     # store the best model
     if best_model is not None:
         output_path = os.path.join(output_dir, "best_model.pkl")
         joblib.dump(best_model, output_path)
-        print(f"Storing the best model in: {output_path}")
+        print(f"Storing the best model {model_name} with hyperparameters {best_hyperparameters} in: {output_path}")
 
     # save results to CSV
     csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
