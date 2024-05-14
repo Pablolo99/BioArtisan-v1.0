@@ -72,7 +72,7 @@ def parse_data(path: str, header: bool) -> dict:
         cluster_data = data[data['cluster'] == cluster]
         smiles_list = cluster_data['smiles']
         molecules = [Chem.MolFromSmiles(smiles) for smiles in smiles_list]
-        fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in molecules]
+        fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in molecules]
         fps = np.array([np.zeros(0)] if len(fingerprints) == 0 else fingerprints)
         labels = cluster_data['antibacterial']
         clusters_dic[cluster] = (fps, labels)
