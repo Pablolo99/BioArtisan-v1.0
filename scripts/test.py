@@ -1,3 +1,10 @@
+#!/usr/bin/env pyton3
+"""
+Description:    Generates a csv file with theorical molecules
+Usage:          python script --model model.pkl --output outputfile.txt --num_molecules 1 --pred_limit 0.5
+
+"""
+
 import warnings
 import argparse
 import time
