@@ -159,7 +159,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
                 best_model = model
                 best_accuracy = avg_accuracy
 
-    # Store the best model
+    # store the best model
     if best_model is not None:
         output_path = os.path.join(output_dir, "best_model.pkl")
         joblib.dump(best_model, output_path)

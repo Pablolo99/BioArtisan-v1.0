@@ -1,80 +1,114 @@
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from sklearn.cluster import KMeans
-from sklearn.metrics import davies_bouldin_score, calinski_harabasz_score
+import argparse
+import os
+from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.decomposition import PCA
+from sklearn.manifold import MDS, TSNE
+import matplotlib.colors as mcolors
+import umap
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from umap import UMAP
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-# Load data from CSV
-data = pd.read_csv("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/crossref_data.csv")
 
-# Extract SMILES strings from the DataFrame
-smiles_list = data['smiles'].tolist()
+def cli() -> argparse.Namespace:
+    """
+    Command Line Interface
 
-# Convert SMILES strings to RDKit molecules
-molecules = [Chem.MolFromSmiles(smiles) for smiles in smiles_list]
+    :return: Parsed command line arguments.
+    :rtype: argparse.Namespace
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", type=str, required=True,
+                        help="Input data file in CSV format.")
+    parser.add_argument("-o", "--output", type=str, required=True,
+                        help="Output directory to store results.")
+    return parser.parse_args()
 
-# Generate Morgan fingerprints
-fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in molecules]
+def perform_clustering(data, method):
+    if method == "KMeans":
+        cluster_alg = KMeans(n_clusters=10, random_state=42)
+    elif method == "Agglomerative":
+        cluster_alg = AgglomerativeClustering(n_clusters=10)
+    else:
+        raise ValueError("Invalid clustering method.")
 
-# Convert fingerprints to numpy array
-fp_array = []
-for fp in fingerprints:
-    arr = np.zeros((1,))
-    AllChem.DataStructs.ConvertToNumpyArray(fp, arr)
-    fp_array.append(arr)
+    labels = cluster_alg.fit_predict(data)
+    return labels
 
-# Dimensionality reduction with UMAP
-reducer = UMAP(n_components=2)
-reduced_data = reducer.fit_transform(fp_array)
 
-"""
-# Evaluate the optimal number of clusters using Davies–Bouldin index and Calinski-Harabasz index
-db_scores = []
-ch_scores = []
-for i in range(2, 20):
-    kmeans = KMeans(n_clusters=i, random_state=42)
-    labels = kmeans.fit_predict(reduced_data)
-    db_score = davies_bouldin_score(reduced_data, labels)
-    ch_score = calinski_harabasz_score(reduced_data, labels)
-    db_scores.append(db_score)
-    ch_scores.append(ch_score)
+def perform_dimensionality_reduction(data, method):
+    if method == "PCA":
+        dim_red = PCA(n_components=2)
+    elif method == "MDS":
+        dim_red = MDS(n_components=2, random_state=42)
+    elif method == "t-SNE":
+        dim_red = TSNE(n_components=2, random_state=42)
+    elif method == "UMAP":
+        dim_red = umap.UMAP(n_components=2)
+    else:
+        raise ValueError("Invalid dimensionality reduction method.")
 
-# Plot Davies–Bouldin index and Calinski-Harabasz index to determine optimal number of clusters
-plt.plot(range(2, 20), db_scores, label='Davies–Bouldin Index', marker='o')
-plt.plot(range(2, 20), ch_scores, label='Calinski-Harabasz Index', marker='x')
-plt.xlabel('Number of Clusters')
-plt.ylabel('Score')
-plt.title('Cluster Evaluation')
-plt.legend()
-plt.show()
+    reduced_data = dim_red.fit_transform(data)
+    return reduced_data
 
-# Perform k-means clustering with the optimal number of clusters
-num_clusters = np.argmax(ch_scores) + 2
-"""
-num_clusters = 10
-kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-labels = kmeans.fit_predict(reduced_data)
 
-# Add cluster labels to the original DataFrame
-data['cluster'] = labels + 1
+def save_cluster_info_to_csv(data, labels, output_dir, method, reduction):
+    data['cluster'] = labels
+    output_filename = os.path.join(output_dir, f"cluster_info_{method}_{reduction}.csv")
+    data.to_csv(output_filename, index=False)
 
-# Save the DataFrame with cluster labels to a new file
-data.to_csv("clustered_data.csv", index=False)
 
-# Define a list of distinct colors
-num_unique_clusters = len(np.unique(labels))
-cluster_colors = np.random.rand(num_unique_clusters, 3)
+def main(input_file, output_dir):
+    # Load data from CSV
+    data = pd.read_csv(input_file)
 
-# Plot the results
-unique_labels = np.unique(labels)
-for i, color in zip(unique_labels, cluster_colors):
-    plt.scatter(reduced_data[labels == i, 0], reduced_data[labels == i, 1], label=f'Cluster {i+1}', color=color)
+    # Extract data
+    smiles_list = data['smiles'].tolist()
+    molecules = [Chem.MolFromSmiles(smiles) for smiles in smiles_list]
+    fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in molecules]
 
-plt.xlabel('UMAP Component 1')
-plt.ylabel('UMAP Component 2')
-plt.title('Molecular Clustering with UMAP')
-plt.legend()
-plt.show()
+    # Convert fingerprints to array
+    fp_array = np.zeros((len(fingerprints), 1024))
+    for i, fp in enumerate(fingerprints):
+        arr = np.zeros((1,))
+        AllChem.DataStructs.ConvertToNumpyArray(fp, arr)
+        fp_array[i] = arr
+
+    # Define algorithms and dimensionality reduction processes
+    clustering_methods = ["KMeans", "Agglomerative"]
+    reduction_methods = ["PCA", "MDS", "t-SNE", "UMAP"]
+
+    # Generate plot
+    num_clusters = 10
+    cluster_colors = [mcolors.to_rgba(f"C{i}") for i in range(num_clusters)]
+
+    for cluster_method in clustering_methods:
+        for reduction_method in reduction_methods:
+            # Perform dimensionality reduction
+            reduced_data = perform_dimensionality_reduction(fp_array, reduction_method)
+
+            # Perform clustering algorithm
+            labels = perform_clustering(reduced_data, cluster_method)
+
+            # Plot the results
+            plt.figure(figsize=(12, 6))
+            unique_labels = np.unique(labels)
+            for i, color in zip(unique_labels, cluster_colors):
+                plt.scatter(reduced_data[labels == i, 0], reduced_data[labels == i, 1], label=f'Cluster {i + 1}',
+                            color=color)
+            plt.xlabel(f'{reduction_method} Component 1')
+            plt.ylabel(f'{reduction_method} Component 2')
+            plt.title(f'Molecular Clustering with {cluster_method} and {reduction_method}')
+            plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), borderaxespad=0.)
+            plt.savefig(os.path.join(output_dir, f"cluster_plots_{cluster_method}_{reduction_method}.png"))
+            plt.close()
+
+            # Save cluster information to CSV
+            save_cluster_info_to_csv(data, labels, output_dir, cluster_method, reduction_method)
+
+
+if __name__ == "__main__":
+    args = cli()
+    main(args.input, args.output)
