@@ -168,7 +168,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
     if best_model is not None:
         output_path = os.path.join(output_dir, "best_model.pkl")
         joblib.dump(best_model, output_path)
-        print(f"Storing the best model {model_name} with hyperparameters {best_hyperparameters} in: {output_path}")
+        print(f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
 
     # save results to CSV
     csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
@@ -185,7 +185,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
 
 def plot_results(results: dict, output_dir: str):
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(12, 8))
 
     models_colors = {'RandomForest': 'blue', 'GBM': 'red', 'SVM': 'green', 'KNN': 'orange'}
 
@@ -199,7 +199,7 @@ def plot_results(results: dict, output_dir: str):
     ax.set_title('Average Accuracy of Models with Different Hyperparameters')
     ax.legend()
     plt.xticks(rotation=90)
-    plt.tight_layout()
+    plt.tight_layout(pad=3.0)
 
     output_path = os.path.join(output_dir, "accuracy_plot.png")
     plt.savefig(output_path)
