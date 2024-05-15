@@ -534,7 +534,6 @@ def gen_molecule(predictor_model) -> Molecule:
 
     return mol
 
-
 model = joblib.load("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/pred_models/model_RF.pkl")
 
 if __name__ == "__main__":
