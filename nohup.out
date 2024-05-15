@@ -1,0 +1,64 @@
+Model: RandomForest, Hyperparameters: max_depth_5_n_estimators_100, Average Accuracy: 0.7232106532461294
+Model: RandomForest, Hyperparameters: max_depth_5_n_estimators_500, Average Accuracy: 0.7345140696153354
+Model: RandomForest, Hyperparameters: max_depth_5_n_estimators_800, Average Accuracy: 0.7304898993411651
+Model: RandomForest, Hyperparameters: max_depth_5_n_estimators_1000, Average Accuracy: 0.7321684707697365
+Model: RandomForest, Hyperparameters: max_depth_20_n_estimators_100, Average Accuracy: 0.7360979921144811
+Model: RandomForest, Hyperparameters: max_depth_20_n_estimators_500, Average Accuracy: 0.7433295105959996
+Model: RandomForest, Hyperparameters: max_depth_20_n_estimators_800, Average Accuracy: 0.7472697276999408
+Model: RandomForest, Hyperparameters: max_depth_20_n_estimators_1000, Average Accuracy: 0.7475517842509848
+Model: RandomForest, Hyperparameters: max_depth_50_n_estimators_100, Average Accuracy: 0.7315503909074862
+Model: RandomForest, Hyperparameters: max_depth_50_n_estimators_500, Average Accuracy: 0.7492386432872775
+Model: RandomForest, Hyperparameters: max_depth_50_n_estimators_800, Average Accuracy: 0.7481392280825991
+Model: RandomForest, Hyperparameters: max_depth_50_n_estimators_1000, Average Accuracy: 0.7533505842924564
+Model: RandomForest, Hyperparameters: max_depth_100_n_estimators_100, Average Accuracy: 0.7460664569718534
+Model: RandomForest, Hyperparameters: max_depth_100_n_estimators_500, Average Accuracy: 0.7456990954304412
+Model: RandomForest, Hyperparameters: max_depth_100_n_estimators_800, Average Accuracy: 0.7563463899709737
+Model: RandomForest, Hyperparameters: max_depth_100_n_estimators_1000, Average Accuracy: 0.7515396119536693
+Model: SVM, Hyperparameters: C_0.1_kernel_linear, Average Accuracy: 0.6869870138004714
+Model: SVM, Hyperparameters: C_0.1_kernel_rbf, Average Accuracy: 0.5394255853148258
+Model: SVM, Hyperparameters: C_0.1_kernel_poly, Average Accuracy: 0.5769902031309426
+Model: SVM, Hyperparameters: C_0.1_kernel_sigmoid, Average Accuracy: 0.7205939287536556
+Model: SVM, Hyperparameters: C_1_kernel_linear, Average Accuracy: 0.6774896970488242
+Model: SVM, Hyperparameters: C_1_kernel_rbf, Average Accuracy: 0.7468689217918065
+Model: SVM, Hyperparameters: C_1_kernel_poly, Average Accuracy: 0.7022439059694222
+Model: SVM, Hyperparameters: C_1_kernel_sigmoid, Average Accuracy: 0.7284503689551991
+Model: SVM, Hyperparameters: C_10_kernel_linear, Average Accuracy: 0.6720777677611456
+Model: SVM, Hyperparameters: C_10_kernel_rbf, Average Accuracy: 0.6757578534427302
+Model: SVM, Hyperparameters: C_10_kernel_poly, Average Accuracy: 0.729546425001455
+Model: SVM, Hyperparameters: C_10_kernel_sigmoid, Average Accuracy: 0.6536739492710513
+Model: SVM, Hyperparameters: C_100_kernel_linear, Average Accuracy: 0.6720777677611456
+Model: SVM, Hyperparameters: C_100_kernel_rbf, Average Accuracy: 0.6835235605315552
+Model: SVM, Hyperparameters: C_100_kernel_poly, Average Accuracy: 0.6913984044368788
+Model: SVM, Hyperparameters: C_100_kernel_sigmoid, Average Accuracy: 0.6392765856851467
+Model: GBM, Hyperparameters: loss_log_loss_n_estimators_100_max_depth_3, Average Accuracy: 0.720972368768005
+Model: GBM, Hyperparameters: loss_log_loss_n_estimators_100_max_depth_5, Average Accuracy: 0.7220300280566769
+Model: GBM, Hyperparameters: loss_log_loss_n_estimators_100_max_depth_10, Average Accuracy: 0.7005893479099675
+Model: GBM, Hyperparameters: loss_log_loss_n_estimators_500_max_depth_3, Average Accuracy: 0.7123827449723519
+Model: GBM, Hyperparameters: loss_log_loss_n_estimators_500_max_depth_5, Average Accuracy: 0.7162047739932482
+Traceback (most recent call last):
+  File "/home/lopez081/BioArtisan-v1.0/scripts/model_evaluation.py", line 227, in <module>
+    main()
+  File "/home/lopez081/BioArtisan-v1.0/scripts/model_evaluation.py", line 220, in main
+    results_models = train_models(clusters_dic, args.output)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lopez081/BioArtisan-v1.0/scripts/model_evaluation.py", line 152, in train_models
+    model.fit(train_X, train_y)
+  File "/lustre/BIF/nobackup/lopez081/miniforge3/envs/bioartisan/lib/python3.12/site-packages/sklearn/base.py", line 1474, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/lustre/BIF/nobackup/lopez081/miniforge3/envs/bioartisan/lib/python3.12/site-packages/sklearn/ensemble/_gb.py", line 784, in fit
+    n_stages = self._fit_stages(
+               ^^^^^^^^^^^^^^^^^
+  File "/lustre/BIF/nobackup/lopez081/miniforge3/envs/bioartisan/lib/python3.12/site-packages/sklearn/ensemble/_gb.py", line 880, in _fit_stages
+    raw_predictions = self._fit_stage(
+                      ^^^^^^^^^^^^^^^^
+  File "/lustre/BIF/nobackup/lopez081/miniforge3/envs/bioartisan/lib/python3.12/site-packages/sklearn/ensemble/_gb.py", line 490, in _fit_stage
+    tree.fit(
+  File "/lustre/BIF/nobackup/lopez081/miniforge3/envs/bioartisan/lib/python3.12/site-packages/sklearn/base.py", line 1474, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/lustre/BIF/nobackup/lopez081/miniforge3/envs/bioartisan/lib/python3.12/site-packages/sklearn/tree/_classes.py", line 1377, in fit
+    super()._fit(
+  File "/lustre/BIF/nobackup/lopez081/miniforge3/envs/bioartisan/lib/python3.12/site-packages/sklearn/tree/_classes.py", line 472, in _fit
+    builder.build(self.tree_, X, y, sample_weight, missing_values_in_feature_mask)
+KeyboardInterrupt
