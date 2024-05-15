@@ -115,14 +115,18 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
         }
     }
 
+    #values to track the best model
+    best_model = None
+    best_accuracy = 0.0
+    best_hyperparameters = None
+
     #evaluate each model for each cluster
     for model_name in models.keys():
         model = models[model_name]
         param_grid = param_grids[model_name]
 
         results[model_name] = {}
-        best_model = None
-        best_accuracy = 0.0
+
 
         # generate combinations of hyperparameters
         param_combinations = [dict(zip(param_grid.keys(), values)) for values in
