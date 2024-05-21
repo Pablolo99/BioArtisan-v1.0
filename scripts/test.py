@@ -537,23 +537,22 @@ def gen_molecule(predictor_model) -> Molecule:
 
     return mol
 
-
-def generate_valid_mol(model, pred_limit:int) -> Molecule:
-    """
-    """
+def generate_valid_mol(pred_limit: float, predictor_model) -> Molecule:
     while True:
-        molecule = gen_molecule(model)
-        if molecule.pred_value >= pred_limit:
-            return molecule
+        mol = gen_molecule(predictor_model)
+        if mol.pred_value >= pred_limit:
+            return mol
 
+def generate_wrapper(args):
+    pred_limit, predictor_model = args
+    return generate_valid_mol(pred_limit, predictor_model)
 
 def main() -> None:
     """
-    Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
-
+    Main function to generate molecules until the desired number of molecules with pred_value >= pred_limit is reached
     """
 
-    # set the arguments from terminal line
+    # Set the arguments from the command line
     args = cli()
 
     predictor_model = joblib.load(args.model)
@@ -561,29 +560,30 @@ def main() -> None:
     num_wanted = int(args.num_molecules)
     pred_limit = float(args.pred_limit)
 
-    # turn warnings off.
+    # Turn off RDKit and Python warnings
     Chem.rdBase.DisableLog("rdApp.error")
     warnings.filterwarnings('ignore')
     RDLogger.DisableLog('rdApp.error')
 
-    #create multiprocess
+    # Start time
     start_time = time.time()
-    num_threads = min(mp.cpu_count()-2, 8)
+
+    # Create a multiprocessing pool
+    num_threads = min(mp.cpu_count() - 2, 8)
     pool = mp.Pool(processes=num_threads)
 
     # Use partial to create a function with pred_limit and predictor_model arguments fixed
-    partial_generate_valid_mol = partial(generate_valid_mol, pred_limit, predictor_model)
+    partial_generate_wrapper = partial(generate_wrapper, (pred_limit, predictor_model))
 
-    #generate molecules concurrently
+    # Generate molecules concurrently
     valid_molecules_written = 0
-    for mol in pool.imap_unordered(partial_generate_valid_mol, range(num_threads)):
+    for mol in pool.imap_unordered(partial_generate_wrapper, range(num_wanted)):
         with open(output_file, 'a') as generated_molecules:
             generated_molecules.write(f"{valid_molecules_written + 1}\t{mol.SMILES}\t{mol.pred_value}\n")
-
         valid_molecules_written += 1
         print(f"Molecule {valid_molecules_written} with pred_value >= {pred_limit} generated and saved to {output_file}")
 
-        #stop if the desired number of molecules is reached
+        # Break if the desired number of molecules is reached
         if valid_molecules_written >= num_wanted:
             break
 
