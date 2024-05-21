@@ -20,6 +20,7 @@ import math
 import typing as ty
 from abc import ABC, abstractmethod
 from random import choice
+from functools import partial
 from typing import List
 from collections import defaultdict, namedtuple
 
@@ -570,9 +571,12 @@ def main() -> None:
     num_threads = min(mp.cpu_count()-2, 8)
     pool = mp.Pool(processes=num_threads)
 
+    # Use partial to create a function with pred_limit and predictor_model arguments fixed
+    partial_generate_valid_mol = partial(generate_valid_mol, pred_limit, predictor_model)
+
     #generate molecules concurrently
     valid_molecules_written = 0
-    for mol in pool.imap_unordered(generate_valid_mol, range(num_threads)):
+    for mol in pool.imap_unordered(partial_generate_valid_mol, range(num_threads)):
         with open(output_file, 'a') as generated_molecules:
             generated_molecules.write(f"{valid_molecules_written + 1}\t{mol.SMILES}\t{mol.pred_value}\n")
 
