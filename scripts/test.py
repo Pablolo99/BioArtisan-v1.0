@@ -579,9 +579,9 @@ def main() -> None:
         valid_molecules_written += 1
         print(f"Molecule {valid_molecules_written} with pred_value >= {pred_limit} generated and saved to {output_file}")
 
-    #stop if the desired number of molecules is reached
-    if valid_molecules_written >= num_wanted:
-        break
+        #stop if the desired number of molecules is reached
+        if valid_molecules_written >= num_wanted:
+            break
 
     # Close the multiprocessing pool
     pool.close()
