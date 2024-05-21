@@ -11,7 +11,8 @@ import time
 import pstats
 import random
 import joblib
-import cProfile
+import multiprocessing as mp
+
 from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, rdChemReactions
 from rdkit.Chem import MolFromSmiles, MolToSmiles
@@ -497,11 +498,8 @@ class Molecule(_MOL, Node):
                         cyc_mol = Molecule(cyc_SMILES, new_pred_value, check, new_count)
                         all_newmol.add(cyc_mol)
 
-
             return all_newmol
-        #else:
-        #    print("Linear addition could not happen.")
-        #return all_newmol
+
 
 def new_mol() -> Molecule:
     """
@@ -539,6 +537,15 @@ def gen_molecule(predictor_model) -> Molecule:
     return mol
 
 
+def generate_valid_mol(model, pred_limit:int) -> Molecule:
+    """
+    """
+    while True:
+        molecule = gen_molecule(model)
+        if molecule.pred_value >= pred_limit:
+            return molecule
+
+
 def main() -> None:
     """
     Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
@@ -558,34 +565,33 @@ def main() -> None:
     warnings.filterwarnings('ignore')
     RDLogger.DisableLog('rdApp.error')
 
-    # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
-    with open(output_file, 'w') as generated_molecules:
-        generated_molecules.write("ID\tSMILES\tpred_value\n")
+    #create multiprocess
+    start_time = time.time()
+    num_threads = min(mp.cpu_count()-2, 8)
+    pool = mp.Pool(processes=num_threads)
 
-    num_mols = 0
+    #generate molecules concurrently
+    valid_molecules_written = 0
+    for mol in pool.imap_unordered(generate_valid_mol, range(num_threads)):
+        with open(output_file, 'a') as generated_molecules:
+            generated_molecules.write(f"{valid_molecules_written + 1}\t{mol.SMILES}\t{mol.pred_value}\n")
 
-    while num_mols < num_wanted:
-        mol = gen_molecule(predictor_model)
-        if mol.pred_value >= pred_limit:
-            #write info in tsv format
-            with open(output_file, 'a') as generated_molecules:
-                generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
-                if num_mols < num_wanted:
-                    generated_molecules.write('\n')
-            num_mols += 1
+        valid_molecules_written += 1
+        print(f"Molecule {valid_molecules_written} with pred_value >= {pred_limit} generated and saved to {output_file}")
 
+    #stop if the desired number of molecules is reached
+    if valid_molecules_written >= num_wanted:
+        break
+
+    # Close the multiprocessing pool
+    pool.close()
+    pool.join()
+
+    # End time
     end_time = time.time()
     execution_time = end_time - start_time
 
-    print(f"El script tardó {execution_time} segundos en ejecutarse.")
-
-    print(f"{num_mols} molecules with pred_value >= {pred_limit} generated and saved to {output_file}")
-
-
+    print(f"The script took {execution_time} seconds to execute.")
 
 if __name__ == "__main__":
-    cProfile.run("main()", "profile_output.txt")
-    stats = pstats.Stats("profile_output.txt")
-    stats.strip_dirs()
-    stats.sort_stats("cumulative")
-    stats.print_stats()
+    main()

@@ -1,38 +1,92 @@
 #!/usr/bin/env pyton3
 """
-Description:    Run the Monte Carlo Tree Search algorithm for molecular design.
-Usage:          python run_mcts.py -m path/to/trained/predictor 
+Description:    Generates a csv file with theorical molecules
+Usage:          python script --model model.pkl --output outputfile.txt --num_molecules 1 --pred_limit 0.5
+
 """
+
+import warnings
 import argparse
+import time
+import pstats
+import random
+import joblib
+import cProfile
+from rdkit import Chem, RDLogger
+from rdkit.Chem import AllChem, rdChemReactions
+from rdkit.Chem import MolFromSmiles, MolToSmiles
 import math
-import joblib 
-import typing as ty 
+import typing as ty
 from abc import ABC, abstractmethod
-from collections import defaultdict, namedtuple 
 from random import choice
+from typing import List
+from collections import defaultdict, namedtuple
 
-from rdkit import Chem 
 
-def cli() -> argparse.Namespace:
+warnings.filterwarnings('ignore')
+
+# Turn off RDKit warnings
+RDLogger.DisableLog('rdApp.error')
+
+#set time
+start_time = time.time()
+
+def cli()-> argparse.Namespace:
     """
     Command Line Interface
-    
+
     :return: Parsed command line arguments.
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model", type=str, required=True, help="Path to trained predictor.")
+    parser.add_argument("--model", required=True, help="Path to model file .pkl")
+    parser.add_argument("--output", required=True, help="Path to output file .txt" )
+    parser.add_argument("--num_molecules", required=True, help="Number of wanted molecules")
+    parser.add_argument("--pred_limit", required=True, help="Lower limit predictor value desired")
     return parser.parse_args()
 
-def load_model(path: str) -> joblib.load:
-    """
-    Load a trained predictor.
-    
-    :param str path: Path to trained predictor.
-    :return: Trained predictor.
-    :rtype: joblib.load
-    """
-    return joblib.load(path)
+# Define the reaction SMARTS pattern
+pk_reaction = '[S][C:2](=[O:3])([*:4]).[S:5][C:6](=[O:7])[*:8][C](=[O])[O]>>[S:5][C:6](=[O:7])[*:8][C:2](=[O:3])([*:4])'
+pk_rxn = rdChemReactions.ReactionFromSmarts(pk_reaction)
+
+extenders = [
+    'O=C(O)CC(=O)S',
+    'CC(C(=O)O)C(=O)S',
+    'CCC(C(=O)O)C(=O)S',
+    'O=C(O)C(CCCl)C(=O)S',
+    'O=C(O)C(O)C(=O)S',
+    'COC(C(=O)O)C(=O)S',
+    'NC(C(=O)O)C(=O)S'
+]
+starters = [
+    'CC(S)=O',
+    'CCC(S)=O'
+]
+
+cyc_reactions = [
+    '([O:4]=[C:3]([*:2])[*:1].[C:6]([*:5])([*:7])[*:8])>>([O:4][C:3]([*:2])([*:1])[C:6]([*:5])([*:7])[*:8])',
+    '([O:4]=[C:3]([*:2])[*].[O:7][C:6]([*:5])[*:8])>>([O:4]=[C:3]([*:2])[O:7][C:6]([*:5])[*:8])',
+    '([O:4]=[C:3]([*:2])[*:1].[O][C:6]([*:5])[*:8])>>([*:8][C:6]([*:5])[O:4][C:3]([*:2])[*:1])',
+    '([C:1]([*:11])[C:2](=[O:8])[C:3][C:4](=[O:9])[C:5][C:6](=[O])[*:7])>>([C:1]([*:11])1=[C:2]([O:8])[C:3]=[C:4]([O:9])[C:5]=[C:6]1([*:7]))',
+    '([C:1](=[O:8])[C:2]=[C:3][C:4][C:5](=[O:9]))>>([C:1](=[O:8])[C:2][C:3][C:4][C:5]([O:9]))',
+    '([C:1](=[O:8])[C:2]=[C:3][C:4][C:5]([O]))>>([C:1]([O:8]1)=[C:2][C:3][C:4][C:5]1)',
+    '([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O:11])[C:6][C:7](=[O])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
+    '([C:1](=[O:9])[C:2][C:3](=[O])[C:4][C:5](=[O:11])[C:6][C:7](=[O])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5]([O:11])[C:6]=[C:7]1[C:8])',
+    '([C:1](=[O:9])[C:2][C:3](=[O:10])[C:4][C:5](=[O])[C:6][C:7](=[O])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3]([O:10])[C:4]=[C:5][C:6]=[C:7]1[C:8])',
+    '([C:1](=[O:9])[C:2][C:3](=[O])[C:4][C:5](=[O])[C:6][C:7](=[O])[C:8])>>([C:1](=[O:9])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1[C:8])',
+    '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O])[C:8][C:9](=[O])[C:10][C:11](=[O]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:13])[C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+    '([C:1](=[O:12])[C:2][C:3](=[O])[C:4][C:5](=[O:14])[C:6][C:7](=[O])[C:8][C:9](=[O])[C:10][C:11](=[O]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5]([O:14])[C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+    '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O])[C:6][C:7](=[O])[C:8][C:9](=[O])[C:10][C:11](=[O]))>>([C:1](=[O:12])[C:2]1=[C:3]([O:13])[C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+    '([C:1](=[O:12])[C:2][C:3](=[O])[C:4][C:5](=[O])[C:6][C:7](=[O])[C:8][C:9](=[O])[C:10][C:11](=[O]))>>([C:1](=[O:12])[C:2]1=[C:3][C:4]=[C:5][C:6]2=[C:7]1[C:8]=[C:9][C:10]=[C:11]2)',
+    '([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O:10])[C:6][C:7](=[O]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
+    '([C:1](=[O:8])[C:2][C:3](=[O])[C:4][C:5](=[O:10])[C:6][C:7](=[O]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5]([O:10])[C:6]=[C:7]1)',
+    '([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O])[C:6][C:7](=[O]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5][C:6]=[C:7]1)',
+    '([C:1](=[O:8])[C:2][C:3](=[O])[C:4][C:5](=[O])[C:6][C:7](=[O]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1)',
+    '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O])[C:8][C:9](=[O:16])[C:10][C:11](=[O]))>>([C:1]([O:12])1[C:2]2[C:3]([O:13])=[C:4][C:5]([O:14])=[C:6][C:7]=2[C:8]=[C:9]([O:16])[C:10]=1[C:11])',
+    '([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]([O:19]3)[C:10]=1[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])'
+]
+
+
 
 class Node(ABC):
     """
@@ -55,14 +109,14 @@ class Node(ABC):
         return Node
 
     @abstractmethod
-    def is_terminal(self) -> bool:
+    def check_terminal(self) -> bool:
         """
         Returns True if the node has no children/
         """
         return True
 
     @abstractmethod
-    def reward(self) -> float:
+    def reward(self, predictor) -> float:
         """
         Assumes `self` is terminal node. 1=win, 0=loss, .5=tie, etc.
         """
@@ -82,16 +136,18 @@ class Node(ABC):
         """
         return True
 
+
 class MCTS:
     """
     Monte Carlo tree searcher.
 
     Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
     """
-    def __init__(self, exploration_weight: int = 1) -> None:
+
+    def __init__(self, exploration_weight: int = 0.5) -> None:
         """
         Initialize Monte Carlo tree searcher.
-        
+
         :param int exploration_weight: Exploration weight.
         """
         self.Q = defaultdict(int)  # Total reward of each node.
@@ -107,20 +163,20 @@ class MCTS:
         :return: The chosen successor node.
         :rtype: Node
         """
-        if node.is_terminal():
-            raise RuntimeError(f"Choose called on terminal node {node}!")
+        if node.check_terminal():
+            raise RuntimeError(f'Choose called on terminal node {node}!')
 
         if node not in self.children:
             return node.find_random_child()
 
         def score(n):
             if self.N[n] == 0:
-                return float("-inf") # Avoid unseen moves.
-            return self.Q[n] / self.N[n] # Average reward.
+                return float("-inf")  # Avoid unseen moves.
+            return self.Q[n] / self.N[n]  # Average reward.
 
         return max(self.children[node], key=score)
 
-    def do_rollout(self, node: Node) -> None:
+    def do_rollout(self, node: Node, predictor_model) -> None:
         """
         Make the tree one layer better. (Train for one iteration.)
 
@@ -128,15 +184,15 @@ class MCTS:
         """
         path = self._select(node)
         leaf = path[-1]
-        self._expand(leaf)
-        reward = self._simulate(leaf)
+        self._expand(leaf, predictor_model)
+        reward = self._simulate(leaf, predictor_model)
         self._backpropagate(path, reward)
 
     def _select(self, node: Node) -> ty.List[Node]:
         """
         Find an unexplored descendent of `node`.
 
-        :param Node node: Node to select from.
+          :param Node node: Node to select from.
         :return: The path to the selected node.
         :rtype: ty.List[Node]
         """
@@ -147,28 +203,28 @@ class MCTS:
             if node not in self.children or not self.children[node]:
                 # Node is either unexplored or terminal.
                 return path
-            
+
             unexplored = self.children[node] - self.children.keys()
 
             if unexplored:
                 n = unexplored.pop()
                 path.append(n)
                 return path
-            
-            node = self._uct_select(node) # Descend a layer deeper.
 
-    def _expand(self, node: Node) -> None:
+            node = self._uct_select(node)  # Descend a layer deeper.
+
+    def _expand(self, node: Node, predictor_model) -> None:
         """
         Update the `children` dict with the children of `node`.
 
         :param Node node: Node to expand.
         """
         if node in self.children:
-            return # Already expanded.
-        
-        self.children[node] = node.find_children()
+            return  # Already expanded.
 
-    def _simulate(self, node: Node) -> float:
+        self.children[node] = node.find_children(predictor_model)
+
+    def _simulate(self, node: Node, predictor_model) -> float:
         """
         Returns the reward for a random simulation (to completion) of `node`.
 
@@ -176,15 +232,12 @@ class MCTS:
         :return: Reward for simulation.
         :rtype: float
         """
-        invert_reward = True
-
         while True:
-            if node.is_terminal():
-                reward = node.reward()
-                return 1 - reward if invert_reward else reward
-            
-            node = node.find_random_child()
-            invert_reward = not invert_reward
+            if node.check_terminal():
+                reward = node.reward(predictor_model)
+                return reward
+
+            node = node.find_random_child(predictor_model)
 
     def _backpropagate(self, path: ty.List[Node], reward: float) -> None:
         """
@@ -196,7 +249,6 @@ class MCTS:
         for node in reversed(path):
             self.N[node] += 1
             self.Q[node] += reward
-            reward = 1 - reward # 1 for me is 0 for my enemy, and vice versa.
 
     def _uct_select(self, node: Node) -> Node:
         """
@@ -222,218 +274,318 @@ class MCTS:
 
         return max(self.children[node], key=uct)
 
-_TTTB = namedtuple("TicTacToeBoard", "tup turn winner terminal")
 
-# Inheriting from a namedtuple is convenient because it makes the class immutable and predefines:
-#   __init__
-#   __repr__
-#   __hash__    
-#   __eq__
-#   ... and others
 
-class TicTacToeBoard(_TTTB, Node):
-    """
-    Define a Tic Tac Toe board.
+_MOL = namedtuple("Molecule", "SMILES pred_value terminal num_adds")
 
-    Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
-    """
-    def find_children(board) -> ty.Set["TicTacToeBoard"]:
+class Molecule(_MOL, Node):
+
+    def find_children(mol, predictor_model) -> ty.Set["Molecule"]:
         """
-        All possible successors of this board state.
-        
-        :param TicTacToeBoard board: Board to find successors of.
-        :return: Set of successor boards.
-        :rtype: ty.Set["TicTacToeBoard"]
+        All possible successors of this molecule state.
+
+        :param mol: Molecule: Molecule to find successors of.
+        :return: Set of successor molecules.
+        :rtype: ty.Set["Molecule"]
         """
-        if board.terminal: # If the game is finished then no moves can be made.
+        if mol.terminal:  # If the proc
             return set()
-        
-        # Otherwise, you can make a move in each of the empty spots.
-        return {board.make_move(i) for i, value in enumerate(board.tup) if value is None}
 
-    def find_random_child(board) -> "TicTacToeBoard":
-        """
-        Random successor of this board state (for more efficient simulation).
-        
-        :param TicTacToeBoard board: Board to find random successor of.
-        :return: Random successor board.
-        :rtype: "TicTacToeBoard"
-        """
-        if board.terminal:
-            return None # If the game is finished then no moves can be made.
-        
-        empty_spots = [i for i, value in enumerate(board.tup) if value is None]
+        children = set()
+        #if mol had started
+        if mol.SMILES :
 
-        return board.make_move(choice(empty_spots))
+            # make a progression using each of the extender unions
+            for submol in extenders:
+                children |= mol.make_progress(submol, cyc_reactions, predictor_model)
 
-    def reward(board) -> float:
+        #if mol had not started
+        if not mol.SMILES :
+            for submol in starters:
+                children |= mol.make_progress(submol, cyc_reactions, predictor_model)
+
+        return children
+
+
+    def find_random_child(mol, predictor_model) -> "Molecule":
         """
-        Assumes `self` is terminal node. 1=win, 0=loss, .5=tie, etc.
-        
-        :param TicTacToeBoard board: Board to calculate reward for.
-        :return: Reward for board.
+        Random successor of this mol state (for more efficient simulation).
+
+        :param mol: Molecule: Molecule to find random successor of.
+        :return: Random successor molecule.
+        :rtype: "Molecule"
+        """
+        # if the molecule do not have C(O)O  or it looks promising, no progress should be made
+        if mol.terminal:
+            return None
+
+        # if the molecule has not started just use the starters
+        if mol.SMILES is None:
+            possible_sub_ads = starters
+        # else use the extenders
+        else:
+            possible_sub_ads = extenders
+
+        # otherwise, make a progress in the molecule object
+        possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions, predictor_model)
+        #print(possible_children)
+        possible_child = choice(list(possible_children))
+        #print(possible_child)
+        return possible_child
+
+    def reward(mol, predictor) -> float:
+        """
+        Calculates the prediction value of a molecule
+
+        :param Molecule mol: Molecule to predict the value from
+        :param predictor: Predictor model used
         :rtype: float
         """
-        if not board.terminal:
-            raise RuntimeError(f"Reward called on nonterminal board {board}!")
-        
-        if board.winner is board.turn:
-            # It's your turn and you've already won. Should be impossible.
-            raise RuntimeError(f"Reward called on unreachable board {board}!")
-        
-        if board.turn is (not board.winner):
-            return 0  # Your opponent has just won. Bad.
-        
-        if board.winner is None:
-            return 0.5  # Board is a tie.
-        
-        # The winner is neither True, False, nor None.
-        raise RuntimeError(f"Board has unknown winner type {board.winner}!")
 
-    def is_terminal(board) -> bool:
-        """
-        Returns True if the node has no children.
+        # obtain the fp of mol
+        str_SMILES = mol.SMILES
+        if str_SMILES is None:
+            return -1.0
 
-        :param TicTacToeBoard board: Board to check if terminal.
-        :return: True if terminal, False otherwise.
-        :rtype: bool
-        """
-        return board.terminal
+        molec = Chem.MolFromSmiles(str_SMILES)
+        fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
+        mol_fingerprint = list(fp)
 
-    def make_move(board, index: int) -> "TicTacToeBoard":
-        """
-        Return a board instance like this one but with one move made.
-        
-        :param TicTacToeBoard board: Board to make move on.
-        :param int index: Index of move to make.
-        :return: Board with move made.
-        :rtype: "TicTacToeBoard"
-        """
-        tup = board.tup[:index] + (board.turn,) + board.tup[index + 1 :]
-        turn = not board.turn
-        #print(turn)
-        winner = _find_winner(tup)
-        #print(winner)
-        is_terminal = (winner is not None) or not any(v is None for v in tup)
+        # calculate predicitve value of the fp
+        #make notice that proba returns the probs of each class: 0 (non-antibiotic), 1(antibiotic), and possible additional (non-relevant)
+        predictive_value = predictor.predict_proba([mol_fingerprint])[0][1]
+        return predictive_value
 
-        return TicTacToeBoard(tup, turn, winner, is_terminal)
 
-    def to_pretty_string(board) -> str:
+
+    def linear_add(mol, subunit: str) -> str:
         """
-        Returns a string representation of the board.
-        
-        :param TicTacToeBoard board: Board to represent as string.
-        :return: String representation of board.
+        Perform reaction between current molecule and another molecule
+
+        :param mol: Molecule object to perform the linear addition
+        :param subunit: Molecule in SMILES format to add
+        :return: resulting Molecule in SMILES format.
         :rtype: str
         """
-        to_char = lambda v: ("X" if v is True else ("O" if v is False else " "))
-        rows = [[to_char(board.tup[3 * row + col]) for col in range(3)] for row in range(3)]
-        return (
-            "\n  1 2 3\n"
-            + "\n".join(str(i + 1) + " " + " ".join(row) for i, row in enumerate(rows))
-            + "\n"
-        )
+        # if the SMILES is None ( molecule generation has just started )
+        if mol.SMILES is None:
+            return subunit
+        # if not, perform the reaction
+        mol1 = Chem.MolFromSmiles(mol.SMILES)
+        mol2 = Chem.MolFromSmiles(subunit)
 
-def play_game():
+        products = pk_rxn.RunReactants((mol1, mol2))
+
+        if products:
+            # Convert the product molecule to SMILES
+            new_SMILES = Chem.MolToSmiles(products[0][0])
+            return new_SMILES
+
+        #else:
+            #print(Chem.MolToSmiles(mol1))
+            #print(Chem.MolToSmiles(mol2))
+            #raise ValueError("Linear addition could not happened.")
+            #return None
+
+    def cyclization(mol, reaction: str) -> ty.Set[str]:
+        """
+        Perform reactions within the current molecule atoms in order to obtain cycles
+
+        :param mol: Molecule object to cycle
+        :param reaction: chemical reaction
+        :return: resulting Molecules in SMILES format
+        :rtype: set(str)
+        """
+        smiles_mol = mol.SMILES
+        inmol = Chem.MolFromSmiles(smiles_mol)
+        unique_outputs = set()
+
+        rxn = rdChemReactions.ReactionFromSmarts(reaction)
+        try:
+            # Run the reaction
+            results = rxn.RunReactants([inmol])
+            #iterate through each result and add to the
+            for result in results:
+                for molec in result:
+                    Chem.SanitizeMol(molec)
+                    unique_outputs.add(Chem.MolToSmiles(molec))
+
+        except ValueError as e:
+            None
+
+        if unique_outputs != set():
+            return unique_outputs
+
+    def check_terminal(mol) -> bool:
+        """
+        Checks if a molecule is terminal or not
+        :param Molecule mol: Molecule to check if it is terminal
+        :return: True if the molecule is terminal, False otherwise
+        :rtype: bool
+        """
+
+        if mol.pred_value > 0.9:
+            return True
+
+        if mol.num_adds >= 10:
+            return True
+
+        adds = mol.num_adds
+        if adds > 1:
+            smiles = Chem.MolFromSmiles(mol.SMILES)
+            carboxylic_pattern = Chem.MolFromSmarts("C(=O)S")
+            if not smiles.HasSubstructMatch(carboxylic_pattern):
+                return True
+
+        else:
+            return False
+
+
+
+    def make_progress(mol, subunit: str, reactions: ty.List[str], predictor_model) -> ty.Set["Molecule"]:
+
+        """
+        Return a set of mol instances with one addition made and cyclization events made.
+
+        :param Molecule mol: molecule to make move on.
+        :param subunit: molecule to add to the original molecule (mol)
+        :param reactions: list of chemical reactions in SMILES format as strings
+        :return: set["Molecule"], Molecule with new atributes
+        :rtype: set["Molecule"]
+        """
+        all_newmol = set()
+
+        new_SMILES = mol.linear_add(subunit)
+
+        if mol.terminal:
+            return
+
+        if new_SMILES is not None:
+            new_count = mol.num_adds + 1
+            new_mol = Molecule(new_SMILES, mol.pred_value, mol.terminal, new_count)
+
+            # calc the new pred value
+            new_pred_value = new_mol.reward(predictor_model)
+
+            # add just the linear version, no cyclizations
+            just_linear_mol = Molecule(new_SMILES, new_pred_value, mol.terminal, new_count)
+            check = just_linear_mol.check_terminal()
+
+            just_linear_mol = Molecule(new_SMILES, new_pred_value, check, new_count)
+
+            all_newmol.add(just_linear_mol)
+
+            # if molecule has had ar least 4 additions, cyclate
+            if new_count >= 4:
+                #from new molecule, cyclate and obtain the new SMILES, pred values and terminal
+                for cyc_rxn in reactions:
+
+                    cyc_products = just_linear_mol.cyclization(cyc_rxn)
+
+                    if cyc_products is None:
+                        continue
+
+                    for cyc_SMILES in cyc_products:
+
+                        new_cyc_mol = Molecule(cyc_SMILES, None, None, new_count)
+                        new_pred_value = new_cyc_mol.reward(predictor_model)
+
+                        # add the counts and check terminal
+                        cyc_mol = Molecule(cyc_SMILES, new_pred_value, mol.terminal, new_count)
+                        check = cyc_mol.check_terminal()
+
+                        cyc_mol = Molecule(cyc_SMILES, new_pred_value, check, new_count)
+                        all_newmol.add(cyc_mol)
+
+
+            return all_newmol
+        #else:
+        #    print("Linear addition could not happen.")
+        #return all_newmol
+
+def new_mol() -> Molecule:
     """
-    Play a game of tic-tac-toe.
+    Returns starting state of the molecule
+
+    :return: Starting state of the molecule
+    :rtype: Molecule
+    """
+    mol = Molecule(SMILES=None, pred_value=0.0, terminal=None, num_adds=0)
+    return mol
+
+
+def gen_molecule(predictor_model) -> Molecule:
+    """
+    Generates a molecule
     """
     tree = MCTS()
-    board = new_tic_tac_toe_board()
-    print(board.to_pretty_string())
+    mol = new_mol()
 
     while True:
-        row_col = input("enter row,col: ")
-        row, col = map(int, row_col.split(","))
-        index = 3 * (row - 1) + (col - 1)
+        # train as we go, do X rollouts
+        for i in range(5):
+            # if the mol is terminal do not rollout
+            if mol.terminal:
+                break
+            # if mol is not terminal do rollout
+            else:
+                tree.do_rollout(mol, predictor_model)
 
-        if board.tup[index] is not None:
-            raise RuntimeError("Invalid move")
-        
-        board = board.make_move(index)
-        print(board.tup)
-        print(board.to_pretty_string())
 
-        if board.terminal:
+        mol = tree.choose(mol)
+        if mol.terminal:
             break
 
-        # You can train as you go, or only at the beginning.
-        # Here, we train as we go, doing fifty rollouts each turn.
-        for _ in range(250):
-            tree.do_rollout(board)
+    return mol
 
-        board = tree.choose(board)
-        print(board.to_pretty_string())
-
-        if board.terminal:
-            break
-
-def _winning_combos():
-    """
-    All winning combos for tic-tac-toe.
-
-    Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
-    """
-    for start in range(0, 9, 3): # Three in a row
-        yield (start, start + 1, start + 2)
-
-    for start in range(3): # Three in a column
-        yield (start, start + 3, start + 6)
-
-    yield (0, 4, 8) # Down-right diagonal
-    yield (2, 4, 6) # Down-left diagonal
-
-def _find_winner(tup: ty.Tuple[ty.Optional[bool], ...]) -> ty.Optional[bool]:
-    """
-    Returns None if no winner, True if X wins, False if O wins.
-    
-    :param ty.Tuple[ty.Optional[bool], ...] tup: Tuple to find winner of.
-    :return: Winner of tuple.
-    :rtype: ty.Optional[bool]
-
-    Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
-    """
-    for i1, i2, i3 in _winning_combos():
-        v1, v2, v3 = tup[i1], tup[i2], tup[i3]
-
-        if False is v1 is v2 is v3:
-            return False
-        
-        if True is v1 is v2 is v3:
-            return True
-        
-    return None
-
-def new_tic_tac_toe_board() -> TicTacToeBoard:
-    """
-    Returns starting state of the board.
-
-    :return: Starting state of the board.
-    :rtype: TicTacToeBoard
-
-    Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
-    """
-    return TicTacToeBoard(tup=(None,) * 9, turn=True, winner=None, terminal=False)
 
 def main() -> None:
-    # Turn RDKit warnings off.
-    Chem.rdBase.DisableLog("rdApp.error")
+    """
+    Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
 
-    # Parse command line arguments.
+    """
+
+    # set the arguments from terminal line
     args = cli()
 
-    # Load trained predictor.
-    predictor = load_model(args.model)
-    print(f"Loaded predictor from {args.model}.")
+    predictor_model = joblib.load(args.model)
+    output_file = args.output
+    num_wanted = int(args.num_molecules)
+    pred_limit = float(args.pred_limit)
 
-    # Run MCTS.
-    # TODO: Repurpose tic-tac-toe MCTS for molecular design.
+    # turn warnings off.
+    Chem.rdBase.DisableLog("rdApp.error")
+    warnings.filterwarnings('ignore')
+    RDLogger.DisableLog('rdApp.error')
 
-    # ... play a game of tic-tac-toe.
-    play_game()
-    print("Done.")
+    # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+    with open(output_file, 'w') as generated_molecules:
+        generated_molecules.write("ID\tSMILES\tpred_value\n")
 
-    exit(0)
+    num_mols = 0
+
+    while num_mols < num_wanted:
+        mol = gen_molecule(predictor_model)
+        if mol.pred_value >= pred_limit:
+            #write info in tsv format
+            with open(output_file, 'a') as generated_molecules:
+                generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
+                if num_mols < num_wanted:
+                    generated_molecules.write('\n')
+            num_mols += 1
+
+    end_time = time.time()
+    execution_time = end_time - start_time
+
+    print(f"El script tardó {execution_time} segundos en ejecutarse.")
+
+    print(f"{num_mols} molecules with pred_value >= {pred_limit} generated and saved to {output_file}")
+
+
 
 if __name__ == "__main__":
-    main()
+    cProfile.run("main()", "profile_output.txt")
+    stats = pstats.Stats("profile_output.txt")
+    stats.strip_dirs()
+    stats.sort_stats("cumulative")
+    stats.print_stats()
