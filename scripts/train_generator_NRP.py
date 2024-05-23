@@ -11,8 +11,7 @@ import time
 import pstats
 import random
 import joblib
-import multiprocessing as mp
-
+import cProfile
 from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, rdChemReactions
 from rdkit.Chem import MolFromSmiles, MolToSmiles
@@ -20,7 +19,6 @@ import math
 import typing as ty
 from abc import ABC, abstractmethod
 from random import choice
-from functools import partial
 from typing import List
 from collections import defaultdict, namedtuple
 
@@ -48,21 +46,134 @@ def cli()-> argparse.Namespace:
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
-pk_reaction = '[S][C:2](=[O:3])([*:4]).[S:5][C:6](=[O:7])[*:8][C](=[O])[O]>>[S:5][C:6](=[O:7])[*:8][C:2](=[O:3])([*:4])'
-pk_rxn = rdChemReactions.ReactionFromSmarts(pk_reaction)
+nrp_reaction = '[N:1]-[C:2](-[*:3])-[C:4](=[O:5])(-[S]).[N:7]-[C:8](-[*:9])-[C:10](=[O:11])(-[S:12]) >> [N:7](-[C:4](=[O:5])-[C:2](-[N:1])(-[*:3]))-[C:8](-[*:9])-[C:10](=[O:11])(-[S:12])'
+nrp_rxn = rdChemReactions.ReactionFromSmarts(nrp_reaction)
 
 extenders = [
-    'O=C(O)CC(=O)S',
-    'CC(C(=O)O)C(=O)S',
-    'CCC(C(=O)O)C(=O)S',
-    'O=C(O)C(CCCl)C(=O)S',
-    'O=C(O)C(O)C(=O)S',
-    'COC(C(=O)O)C(=O)S',
-    'NC(C(=O)O)C(=O)S'
+    'NCC(C1=CN=CN1)C(=O)O',
+    'CC[C@H](C)[C@@H](C(=O)O)N',
+    'CC(C)C[C@H](C(=O)O)N',
+    'CCCCC(N)C(=O)O',
+    'CSCC[C@H](N)C(=O)O',
+    'C1=CC=C(C=C1)CC(C(=O)O)N',
+    'C[C@H](O)[C@H](N)C(=O)O',
+    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)O)N',
+    'CC(C)C(C(=O)O)N',
+    'NC(CCCNC(=N)N)C(=O)O',
+    'CC(C(=O)O)N',
+    'NC(CC(=O)N)C(=O)O',
+    'NC(CC(=O)O)C(=O)O',
+    'C(CS)C(=O)O',
+    'NC(CCC(=O)N)C(=O)O',
+    'NC(CCC(=O)O)C(=O)O',
+    'C(C(=O)O)N',
+    'C1CC(NC1)C(=O)O',
+    'C(CO)C(=O)O',
+    'C1=CC=C(C=C1)CC(C(=O)O)N',
+
+    'OC([C@@H](C)[C@@H](N)/C=C/C(C)=C/[C@H](C)[C@@H](OC)CC1=CC=CC=C1)=O',
+    'O=C(O)CCN',
+    'O=C(O)c1ccc(N)cc1',
+    'NCCCC(=O)O',
+    'OC([C@@H](N)CSCCN)=O',
+    'O=C(O)C(N)(C)C',
+    'O=C(CN)CCC(=O)O',
+    'O=C(O)[C@H]1NCC1',
+    'O=C(O)[C@@H](N)CCON',
+    'N[C@@H](CCON=C(N)N)C(O)=O',
+    'O=C(O)C(C(=O)O)CC(N)C(=O)O',
+    'C(C(C(=O)O)N)Cl',
+    'NC(CCCNC(N)=O)C(O)=O',
+    'C(C(C(=O)O)N)SSCC(C(=O)O)N',
+    'C=C(C(=O)O)N',
+    'O=C(O)[C@@H](N)CCC[C@@H](N)C(=O)O',
+    'C1=CC(=C(C=C1[C@@H](C(=O)O)N)O)O',
+    'C1=CC(=C(C=C1C[C@@H](C(=O)O)N)C2=C(C=CC(=C2)C[C@@H](C(=O)O)N)O)O',
+    'C1[C@H](NC(=N)N1)C[C@@H](C(=O)O)N',
+    'C1C(C=CC(C1SCC(C(=O)O)N)(CC(=O)O)O)O',
+    'C(CS)C(C(=O)O)N',
+    'O=C(O)C(N)CCO',
+    'C1=CC(=CC=C1C(C(=O)O)N)O',
+    'C1[C@H](CN[C@@H]1C(=O)O)O',
+    'C(CCNC[C@@H](CCN)O)C[C@@H](C(=O)O)N',
+    'C(C(C(=O)O)O)N',
+    'O=C(O)[C@@H](N)CSC[C@H](N)C(=O)O',
+    'CC(C)C(CC(=O)O)N',
+    'CCCCC(N)C(O)=O',
+    'CCCC(C(=O)O)N',
+    'CC(C)(CC(C(=O)O)N)C(F)F',
+    'O=C(O)[C@@H](N)CCCN',
+    'CC(C)([C@H](C(=O)O)N)S',
+    'OC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
+    'O=C(O)[C@H]1NC(=O)CC1',
+    'O=C1NC(=O)ON1C[C@H](N)C(=O)O',
+    'CCNC(=O)CCC(N)C(O)=O',
+    'CCNC(=O)CC[C@H](N)C(=O)O',
+    'NC[C@@H]1CC[C@H](CC1)C(O)=O',
+    'C1[C@H](ONC1=O)[C@@H](C(=O)O)N'
 ]
 starters = [
-    'CC(S)=O',
-    'CCC(S)=O'
+    'NCC(C1=CN=CN1)C(=O)O',
+    'CC[C@H](C)[C@@H](C(=O)O)N',
+    'CC(C)C[C@H](C(=O)O)N',
+    'CCCCC(N)C(=O)O',
+    'CSCC[C@H](N)C(=O)O',
+    'C1=CC=C(C=C1)CC(C(=O)O)N',
+    'C[C@H](O)[C@H](N)C(=O)O',
+    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)O)N',
+    'CC(C)C(C(=O)O)N',
+    'NC(CCCNC(=N)N)C(=O)O',
+    'CC(C(=O)O)N',
+    'NC(CC(=O)N)C(=O)O',
+    'NC(CC(=O)O)C(=O)O',
+    'C(CS)C(=O)O',
+    'NC(CCC(=O)N)C(=O)O',
+    'NC(CCC(=O)O)C(=O)O',
+    'C(C(=O)O)N',
+    'C1CC(NC1)C(=O)O',
+    'C(CO)C(=O)O',
+    'C1=CC=C(C=C1)CC(C(=O)O)N',
+
+    'OC([C@@H](C)[C@@H](N)/C=C/C(C)=C/[C@H](C)[C@@H](OC)CC1=CC=CC=C1)=O',
+    'O=C(O)CCN',
+    'O=C(O)c1ccc(N)cc1',
+    'NCCCC(=O)O',
+    'OC([C@@H](N)CSCCN)=O',
+    'O=C(O)C(N)(C)C',
+    'O=C(CN)CCC(=O)O',
+    'O=C(O)[C@H]1NCC1',
+    'O=C(O)[C@@H](N)CCON',
+    'N[C@@H](CCON=C(N)N)C(O)=O',
+    'O=C(O)C(C(=O)O)CC(N)C(=O)O',
+    'C(C(C(=O)O)N)Cl',
+    'NC(CCCNC(N)=O)C(O)=O',
+    'C(C(C(=O)O)N)SSCC(C(=O)O)N',
+    'C=C(C(=O)O)N',
+    'O=C(O)[C@@H](N)CCC[C@@H](N)C(=O)O',
+    'C1=CC(=C(C=C1[C@@H](C(=O)O)N)O)O',
+    'C1=CC(=C(C=C1C[C@@H](C(=O)O)N)C2=C(C=CC(=C2)C[C@@H](C(=O)O)N)O)O',
+    'C1[C@H](NC(=N)N1)C[C@@H](C(=O)O)N',
+    'C1C(C=CC(C1SCC(C(=O)O)N)(CC(=O)O)O)O',
+    'C(CS)C(C(=O)O)N',
+    'O=C(O)C(N)CCO',
+    'C1=CC(=CC=C1C(C(=O)O)N)O',
+    'C1[C@H](CN[C@@H]1C(=O)O)O',
+    'C(CCNC[C@@H](CCN)O)C[C@@H](C(=O)O)N',
+    'C(C(C(=O)O)O)N',
+    'O=C(O)[C@@H](N)CSC[C@H](N)C(=O)O',
+    'CC(C)C(CC(=O)O)N',
+    'CCCCC(N)C(O)=O',
+    'CCCC(C(=O)O)N',
+    'CC(C)(CC(C(=O)O)N)C(F)F',
+    'O=C(O)[C@@H](N)CCCN',
+    'CC(C)([C@H](C(=O)O)N)S',
+    'OC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
+    'O=C(O)[C@H]1NC(=O)CC1',
+    'O=C1NC(=O)ON1C[C@H](N)C(=O)O',
+    'CCNC(=O)CCC(N)C(O)=O',
+    'CCNC(=O)CC[C@H](N)C(=O)O',
+    'NC[C@@H]1CC[C@H](CC1)C(O)=O',
+    'C1[C@H](ONC1=O)[C@@H](C(=O)O)N'
 ]
 
 cyc_reactions = [
@@ -85,7 +196,11 @@ cyc_reactions = [
     '([C:1](=[O:8])[C:2][C:3](=[O:9])[C:4][C:5](=[O])[C:6][C:7](=[O]))>>([C:1](=[O:8])[C:2]1=[C:3]([O:9])[C:4]=[C:5][C:6]=[C:7]1)',
     '([C:1](=[O:8])[C:2][C:3](=[O])[C:4][C:5](=[O])[C:6][C:7](=[O]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1)',
     '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O])[C:8][C:9](=[O:16])[C:10][C:11](=[O]))>>([C:1]([O:12])1[C:2]2[C:3]([O:13])=[C:4][C:5]([O:14])=[C:6][C:7]=2[C:8]=[C:9]([O:16])[C:10]=1[C:11])',
-    '([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]([O:19]3)[C:10]=1[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])'
+    '([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]([O:19]3)[C:10]=1[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
+
+    '[*:1]-[C:2](=[O:3])(-[*]).[N:5]-[C:6](-[*:9])-[*:7] >> [*:1]-[C:2](=[O:3])-[N:5]-[C:6](-[*:9])-[*:7]',
+    '[*:1]-[C:2](=[O])(-[*:4]).[*:5]-[C:6](=[O:7])-[N:8]-[C:9](-[*:10])-[*:11] >> [*:5]-[C:6](=[O:7])-[N:8]([C:2](-[*:4])-[*:1])-[C:9](-[*:10])-[*:11]',
+    '[*:1]-[C:2](-[O])(-[*:4]).[*:5]-[C:6](=[O:7])-[N:8]-[C:9](-[*:10])-[*:11] >> [*:5]-[C:6](=[O:7])-[N:8]([C:2](-[*:4])-[*:1])-[C:9](-[*:10])-[*:11]'
 ]
 
 
@@ -376,7 +491,7 @@ class Molecule(_MOL, Node):
         mol1 = Chem.MolFromSmiles(mol.SMILES)
         mol2 = Chem.MolFromSmiles(subunit)
 
-        products = pk_rxn.RunReactants((mol1, mol2))
+        products = nrp_rxn.RunReactants((mol1, mol2))
 
         if products:
             # Convert the product molecule to SMILES
@@ -499,8 +614,11 @@ class Molecule(_MOL, Node):
                         cyc_mol = Molecule(cyc_SMILES, new_pred_value, check, new_count)
                         all_newmol.add(cyc_mol)
 
-            return all_newmol
 
+            return all_newmol
+        #else:
+        #    print("Linear addition could not happen.")
+        #return all_newmol
 
 def new_mol() -> Molecule:
     """
@@ -537,19 +655,14 @@ def gen_molecule(predictor_model) -> Molecule:
 
     return mol
 
-def generate_valid_mol(pred_limit: float, predictor_model) -> Molecule:
-    """"""
-    while True:
-        mol = gen_molecule(predictor_model)
-        if mol.pred_value >= pred_limit:
-            return mol
 
 def main() -> None:
     """
-    Main function to generate molecules until the desired number of molecules with pred_value >= pred_limit is reached
+    Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+
     """
 
-    # Set the arguments from the command line
+    # set the arguments from terminal line
     args = cli()
 
     predictor_model = joblib.load(args.model)
@@ -557,42 +670,39 @@ def main() -> None:
     num_wanted = int(args.num_molecules)
     pred_limit = float(args.pred_limit)
 
-    # Turn off RDKit and Python warnings
+    # turn warnings off.
     Chem.rdBase.DisableLog("rdApp.error")
     warnings.filterwarnings('ignore')
     RDLogger.DisableLog('rdApp.error')
 
-    # Start time
-    start_time = time.time()
+    # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+    with open(output_file, 'w') as generated_molecules:
+        generated_molecules.write("ID\tSMILES\tpred_value\n")
 
-    # Create a multiprocessing pool
-    num_threads = min(mp.cpu_count() - 2, 8)
-    pool = mp.Pool(processes=num_threads)
+    num_mols = 0
 
-    # Use partial to create a function with pred_limit and predictor_model arguments fixed
-    partial_generate_wrapper = partial(generate_wrapper, (pred_limit, predictor_model))
+    while num_mols < num_wanted:
+        mol = gen_molecule(predictor_model)
+        if mol.pred_value >= pred_limit:
+            #write info in tsv format
+            with open(output_file, 'a') as generated_molecules:
+                generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
+                if num_mols < num_wanted:
+                    generated_molecules.write('\n')
+            num_mols += 1
 
-    # Generate molecules concurrently
-    valid_molecules_written = 0
-    for mol in pool.imap_unordered(partial_generate_wrapper, range(num_wanted)):
-        with open(output_file, 'a') as generated_molecules:
-            generated_molecules.write(f"{valid_molecules_written + 1}\t{mol.SMILES}\t{mol.pred_value}\n")
-        valid_molecules_written += 1
-        print(f"Molecule {valid_molecules_written} with pred_value >= {pred_limit} generated and saved to {output_file}")
-
-        # Break if the desired number of molecules is reached
-        if valid_molecules_written >= num_wanted:
-            break
-
-    # Close the multiprocessing pool
-    pool.close()
-    pool.join()
-
-    # End time
     end_time = time.time()
     execution_time = end_time - start_time
 
-    print(f"The script took {execution_time} seconds to execute.")
+    print(f"El script tardó {execution_time} segundos en ejecutarse.")
+
+    print(f"{num_mols} molecules with pred_value >= {pred_limit} generated and saved to {output_file}")
+
+
 
 if __name__ == "__main__":
-    main()
+    cProfile.run("main()", "profile_output.txt")
+    stats = pstats.Stats("profile_output.txt")
+    stats.strip_dirs()
+    stats.sort_stats("cumulative")
+    stats.print_stats()
