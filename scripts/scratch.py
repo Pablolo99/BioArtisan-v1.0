@@ -1,188 +1,25 @@
-#!/usr/bin/env python3
-
-"""
-This script is developed to cross-reference molecular information from two CSV files.
-It returns a CSV file with additional information on what kind of molecule we have.
-In order to do so, it compares the fingerprints of molecules from two information files.
-"""
-
-import os
-import pandas as pd
-import argparse
 import csv
-import numpy as np
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import DataStructs
 
 
-def cli() -> argparse.Namespace:
-    """
-    Command Line Interface
+def remove_last_column_and_modify_antibacterial(input_file, output_file):
+    with open(input_file, 'r', newline='') as infile, open(output_file, 'w', newline='') as outfile:
+        reader = csv.reader(infile)
+        writer = csv.writer(outfile)
 
-    :return: Parsed command line arguments.
-    :rtype: argparse.Namespace
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i1", "--input1", type=str, required=True,
-                        help="Training data in CSV format, with individual lines formatted as 'id,smiles,0/1'.")
-    parser.add_argument("-i2", "--input2", type=str, required=True,
-                        help="Training data in TSV format, with individual lines formatted as 'num,coconut_id,smiles,prediction_pathway'.")
-    parser.add_argument("-kw", "--keywords", type=str, required=True,
-                        help="Comma-separated list of keywords to filter for.")
-    parser.add_argument("-nc", "--new_column", type=str, required=True,
-                        help="Name of the new column to be added.")
-    parser.add_argument("-o", "--output", type=str, required=True,
-                        help="Output data in CSV format, with individual lines formatted as 'mol_id,smiles,antibacterial,{new_column}' ")
+        # Read the header
+        header = next(reader)
+        writer.writerow(header[:-1])  # Write all columns except the last one
 
-    return parser.parse_args()
-
-
-def tsv_to_csv(tsv_file):
-    """
-    This function converts a TSV format file to a CSV format file
-    :param tsv_file: str, PATH of the original TSV file
-    :param csv_file: str, PATH of the created CSV file
-    """
-    base_name, _ = os.path.splitext(os.path.basename(tsv_file))
-    csv_file = os.path.join(os.path.dirname(tsv_file), f"{base_name}.csv")
-
-    if tsv_file.lower().endswith('.csv'):
-        print(f"{tsv_file} is already a CSV file. No conversion needed.")
-        return tsv_file
-
-    elif tsv_file.lower().endswith('.tsv'):
-        df = pd.read_csv(tsv_file, sep='\t')
-        df.to_csv(csv_file, index=False)
-        print(f"Conversion successful: {tsv_file} -> {csv_file}")
-    return csv_file
-
-
-def filter_np(csv_file, keywords):
-    """
-    This function creates a CSV file that only contains lines that have any of the specified keywords
-    :param csv_file: str, PATH of the original CSV file
-    :param keywords: list of str, keywords to look for in each line of CSV file
-    :return: filter_csv_file : str, PATH of the filtered CSV file
-    """
-    full_path, file_name = os.path.split(csv_file)
-    base_name, _ = os.path.splitext(file_name)
-    full_base_name = os.path.join(full_path, base_name)
-
-    output_csv = f'{full_base_name}_filtered_output.csv'
-    # Check if the output file already exists
-    if os.path.exists(output_csv):
-        print(f"Filtered CSV file already exists: {output_csv}. No filtering needed")
-        return output_csv
-
-    df = pd.read_csv(csv_file)
-    keywords_set = set(map(str.strip, keywords.lower().split(',')))
-
-    def contains_keywords(row):
-        # Check from the 4th column onwards
-        for col in row.index[3:]:
-            cell_content = str(row[col]).strip().lower()
-            if any(keyword in cell_content for keyword in keywords_set):
-                return True
-        return False
-
-    filtered_df = df[df.apply(contains_keywords, axis=1)]
-    filtered_df.to_csv(output_csv, index=False)
-    print(f"Filtering successful: {csv_file} -> {output_csv}")
-    return output_csv
-
-
-def calculate_morgan_fingerprint(smiles, radius=2, num_bits=2048):
-    """
-    This function calculates Morgan fingerprint for a molecule in SMILES format
-    :param smiles: str, SMILES format of the molecule
-    :param radius: int, radius specification for the fingerprint (2).
-    :param num_bits: int, number of bits used (2048)
-    :return: RDKit Morgan fingerprint
-    """
-    mol = Chem.MolFromSmiles(smiles)
-
-    if mol is None:
-        raise ValueError("Failed to parse SMILES.")
-
-    fingerprint = AllChem.GetMorganFingerprintAsBitVect(mol, radius, num_bits)
-    return fingerprint
-
-
-def calculate_tanimoto(fp1, fp2):
-    """
-    This function calculates the Tanimoto similarity index between 2 fingerprints
-    :param fp1: RDKit fingerprint for the first molecule
-    :param fp2: RDKit fingerprint for the second molecule
-    :return: float, Tanimoto index
-    """
-    tanimoto_similarity = DataStructs.TanimotoSimilarity(fp1, fp2)
-    return tanimoto_similarity
-
-
-def add_np_column(file_path1, file_path2, output_path, new_column):
-    """
-    This function adds a new column to a df with cross-referenced information.
-    The original df is a CSV file of the donphan db. The information added is
-    within the second file, a CSV file original from coconut db.
-    :param file_path1: str, path of the donphan db CSV file
-    :param file_path2: str, path of the coconut prediction file CSV format
-    :param output_path: str, path of the resulting CSV file
-    :param new_column: str, name of the new column to be added
-    """
-    df1 = pd.read_csv(file_path1)
-
-    # Extract fingerprints for the second file
-    df2 = pd.read_csv(file_path2)
-    smiles_list2 = df2['smiles'].tolist()
-    fingerprints_dict = {}
-
-    for smiles2 in smiles_list2:
-        if smiles2 is not None:
-            fp2 = calculate_morgan_fingerprint(smiles2)
-            fingerprints_dict[smiles2] = fp2
-
-    for i, smiles1 in enumerate(df1['smiles']):
-        if smiles1 is not None:
-            fp1 = calculate_morgan_fingerprint(smiles1)
-        for smiles2, fp2 in fingerprints_dict.items():
-            # Calculate Tanimoto similarity
-            tanimoto_similarity = calculate_tanimoto(fp2, fp1)
-
-            if tanimoto_similarity > 0.99:
-                df1.loc[i, new_column] = '1'
-                break
-
-    # Drop all the lines that are not recognized
-    df1 = df1.dropna(subset=[new_column])
-
-    # Drop all the lines that have not '1' in the new column
-    df1_filtered = df1[df1[new_column] == '1']
-
-    df1_filtered.to_csv(output_path, index=False)
-
-
-def main():
-    # Turn RDKit warnings off
-    Chem.rdBase.DisableLog("rdApp.*")
-
-    # Parse command line arguments
-    args = cli()
-    file1 = args.input1
-    file2 = args.input2
-    keywords = args.keywords
-    new_column = args.new_column
-    output_path = args.output
-
-    # Convert TSV file to CSV
-    file2_csv = tsv_to_csv(file2)
-
-    # Filter CSV by keywords
-    filtered_csv = filter_np(file2_csv, keywords)
-
-    # Add natural product column to the information of file1
-    add_np_column(file1, filtered_csv, output_path, new_column)
+        for row in reader:
+            if len(row) > 1:  # Check to make sure the row isn't empty
+                # Modify the 'antibacterial' column
+                antibacterial_value = row[2]
+                if antibacterial_value == '0':
+                    row[2] = ''  # Replace '0' with an empty string
+                writer.writerow(row[:-1])  # Write all columns except the last one
 
 
 if __name__ == "__main__":
-    main()
+    input_file = 'C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/antibacterial_PK.csv'
+    output_file = 'C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/antibacterial_PK_clean.csv'
+    remove_last_column_and_modify_antibacterial(input_file, output_file)

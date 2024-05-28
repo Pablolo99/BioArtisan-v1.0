@@ -1,4 +1,4 @@
-#!/usr/bin/env pyton3
+ #!/usr/bin/env pyton3
 """
 Description:    Train predictors to predict the activity of a molecule.
 Usage:          python model_evaluation.py -i data/train.csv -o output/ [OPTIONS]
@@ -81,8 +81,14 @@ def parse_data(path: str, header: bool) -> dict:
 
 
 def train_models(clusters_dic: dict, output_dir: str) -> dict:
-    """"""
-    # train and evaluate models for different algorithms for each cluster
+    """
+    Train and evaluate models for different algorithms for each cluster.
+
+    :param dict clusters_dic: Dictionary containing cluster information.
+    :param str output_dir: Output directory to store results and models.
+    :return: Dictionary containing evaluation results.
+    :rtype: dict
+    """
     models = {
         "RandomForest": RandomForestClassifier(),
         "SVM": SVC(),
@@ -115,22 +121,17 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
         }
     }
 
-    #values to track the best model
     best_model = None
     best_accuracy = 0.0
     best_hyperparameters = None
 
-    #evaluate each model for each cluster
     for model_name in models.keys():
         model = models[model_name]
         param_grid = param_grids[model_name]
 
         results[model_name] = {}
 
-
-        # generate combinations of hyperparameters
-        param_combinations = [dict(zip(param_grid.keys(), values)) for values in
-                              itertools.product(*param_grid.values())]
+        param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
 
         for params in param_combinations:
             key = '_'.join([f"{param}_{value}" for param, value in params.items()])
@@ -145,7 +146,8 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
                         train_X.extend(X)
                         train_y.extend(y)
 
-                train_X = np.array(train_X)
+                # Ensure all elements in train_X are numpy arrays of the same shape
+                train_X = np.array([np.array(fp) for fp in train_X])
                 train_y = np.array(train_y)
 
                 model.set_params(**params)
@@ -158,19 +160,16 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
             avg_accuracy = np.mean(results[model_name][key])
             print(f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}")
 
-            #update the best model
             if avg_accuracy > best_accuracy:
                 best_model = model
                 best_accuracy = avg_accuracy
                 best_hyperparameters = params
 
-    # store the best model
     if best_model is not None:
         output_path = os.path.join(output_dir, "best_model.pkl")
         joblib.dump(best_model, output_path)
         print(f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
 
-    # save results to CSV
     csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
     with open(csv_output_path, 'w') as f:
         f.write("Model,Hyperparameters,Average Accuracy\n")
@@ -182,6 +181,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
     print(f"Storing accuracy results in: {csv_output_path}")
 
     return results
+
 
 
 def plot_results(results: dict, output_dir: str):
