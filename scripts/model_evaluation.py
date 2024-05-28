@@ -1,4 +1,4 @@
- #!/usr/bin/env pyton3
+#!/usr/bin/env python3
 """
 Description:    Train predictors to predict the activity of a molecule.
 Usage:          python model_evaluation.py -i data/train.csv -o output/ [OPTIONS]
@@ -17,7 +17,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 
 
 def cli() -> argparse.Namespace:
@@ -58,12 +58,13 @@ def parse_data(path: str, header: bool) -> dict:
     :param str path: Path to csv file.
     :param bool header: Flag to indicate if csv file has header.
     :return: Tuple of training data and labels.
-    :rtype: dic[int] = ty.Tuple[np.ndarray, np.ndarray]
+    :rtype: dict[int, tuple[np.ndarray, np.ndarray]]
     """
     if header:
         data = pd.read_csv(path, header=0)
     else:
         data = pd.read_csv(path, header=None)
+        data.columns = ["id", "smiles", "antibacterial", "Polyketide", "cluster"]
 
     clusters_dic = {}
     clusters = np.unique(data['cluster'])  # Unique cluster values
@@ -122,7 +123,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
     }
 
     best_model = None
-    best_accuracy = 0.0
+    best_score = 0.0
     best_hyperparameters = None
 
     for model_name in models.keys():
@@ -131,7 +132,8 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
         results[model_name] = {}
 
-        param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
+        param_combinations = [dict(zip(param_grid.keys(), values)) for values in
+                              itertools.product(*param_grid.values())]
 
         for params in param_combinations:
             key = '_'.join([f"{param}_{value}" for param, value in params.items()])
@@ -155,71 +157,93 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
                 y_pred = model.predict(test_X)
                 accuracy = accuracy_score(test_y, y_pred)
-                results[model_name][key].append(accuracy)
+                f1 = f1_score(test_y, y_pred, average='macro')  # Calculate macro-average F1 score
 
-            avg_accuracy = np.mean(results[model_name][key])
-            print(f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}")
+                results[model_name][key].append((accuracy, f1))
 
-            if avg_accuracy > best_accuracy:
+            avg_accuracy = np.mean([score[0] for score in results[model_name][key]])
+            avg_f1 = np.mean([score[1] for score in results[model_name][key]])
+            print(
+                f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}, Average F1 Score: {avg_f1}")
+
+            # Use a combined score to select the best model
+            combined_score = (avg_accuracy + avg_f1) / 2
+            if combined_score > best_score:
                 best_model = model
-                best_accuracy = avg_accuracy
+                best_score = combined_score
                 best_hyperparameters = params
 
     if best_model is not None:
         output_path = os.path.join(output_dir, "best_model.pkl")
         joblib.dump(best_model, output_path)
-        print(f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
+        print(
+            f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
 
     csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
     with open(csv_output_path, 'w') as f:
-        f.write("Model,Hyperparameters,Average Accuracy\n")
+        f.write("Model,Hyperparameters,Average Accuracy,Average F1 Score\n")
         for model_name, model_params in results.items():
             for param_name, param_values in model_params.items():
-                avg_accuracy = np.mean(param_values)
-                f.write(f"{model_name},{param_name},{avg_accuracy}\n")
+                avg_accuracy = np.mean([score[0] for score in param_values])
+                avg_f1 = np.mean([score[1] for score in param_values])
+                f.write(f"{model_name},{param_name},{avg_accuracy},{avg_f1}\n")
 
     print(f"Storing accuracy results in: {csv_output_path}")
 
     return results
 
 
+def plot_results(results: dict, output_dir: str) -> None:
+    """
+    Plot results of model evaluations.
 
-def plot_results(results: dict, output_dir: str):
-    fig, ax = plt.subplots(figsize=(12, 8))
-
-    models_colors = {'RandomForest': 'blue', 'GBM': 'red', 'SVM': 'green', 'KNN': 'orange'}
-
+    :param dict results: Dictionary containing evaluation results.
+    :param str output_dir: Output directory to store plots.
+    """
     for model_name, model_params in results.items():
+        accuracies = []
+        f1_scores = []
+        param_names = []
+
         for param_name, param_values in model_params.items():
-            avg_accuracy = np.mean(param_values)
-            ax.bar(f"{model_name}_{param_name}", avg_accuracy, color=models_colors[model_name], label=model_name)
+            avg_accuracy = np.mean([score[0] for score in param_values])
+            avg_f1 = np.mean([score[1] for score in param_values])
+            accuracies.append(avg_accuracy)
+            f1_scores.append(avg_f1)
+            param_names.append(param_name)
 
-    ax.set_xlabel('Model and Hyperparameters')
-    ax.set_ylabel('Average Accuracy')
-    ax.set_title('Average Accuracy of Models with Different Hyperparameters')
-    ax.legend()
-    plt.xticks(rotation=90)
-    plt.tight_layout(pad=3.0)
+        x = np.arange(len(param_names))
 
-    output_path = os.path.join(output_dir, "accuracy_plot.png")
-    plt.savefig(output_path)
-    print(f"Storing the accuracy plot in: {output_path}")
+        plt.figure(figsize=(12, 6))
+        plt.bar(x - 0.2, accuracies, 0.4, label='Accuracy')
+        plt.bar(x + 0.2, f1_scores, 0.4, label='F1 Score')
+
+        plt.xlabel('Hyperparameters')
+        plt.ylabel('Scores')
+        plt.title(f'Model Evaluation for {model_name}')
+        plt.xticks(x, param_names, rotation=90)
+        plt.legend()
+        plt.tight_layout()
+
+        plot_path = os.path.join(output_dir, f"{model_name}_evaluation.png")
+        plt.savefig(plot_path)
+        plt.close()
 
 
 def main() -> None:
-    # turn RDKit warnings off.
+    # Turn RDKit warnings off.
     Chem.rdBase.DisableLog("rdApp.*")
 
-    # parse command line arguments.
+    # Parse command line arguments.
     args = cli()
 
-    # obtain dict of clusters
+    # Obtain dict of clusters
     clusters_dic = parse_data(args.input, args.h)
 
-    # train the models
+    # Train the models
     results_models = train_models(clusters_dic, args.output)
 
-    # create the plot
+    # Create the plot
     plot_results(results_models, args.output)
 
 

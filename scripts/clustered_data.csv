@@ -1,6 +1,6 @@
 mol_id,smiles,antibacterial,cluster
-45,Cc1cc(O)cc(O)c1C(=O)OC(C)Cc1cc(O)cc(O)c1C(=O)OC(C)Cc1cc(O)cc(O)c1C(=O)OC(C)Cc1cc(O)cc(O)c1C(=O)O,0,1
-111,Cc1cc(O)c2c(c1)C(=O)c1cccc(O)c1C2=O,0,2
+45,Cc1cc(O)cc(O)c1C(=O)OC(C)Cc1cc(O)cc(O)c1C(=O)OC(C)Cc1cc(O)cc(O)c1C(=O)OC(C)Cc1cc(O)cc(O)c1C(=O)O,,1
+111,Cc1cc(O)c2c(c1)C(=O)c1cccc(O)c1C2=O,,2
 142,COc1c(C)c2c(c(O)c1CC=C(C)CCC(=O)OCCN1CCOCC1)C(=O)OC2,1.0,6
 144,COC1CC2CCC(C)C(O)(O2)C(=O)C(=O)N2CCCCC2C(=O)OC(C(C)CC2CCC(O)C(OC)C2)CC(=O)C(C)C=C(C)C(O)C(OC)C(=O)C(C)CC(C)C=CC=CC=C1C,1.0,7
 200,Cc1cc(O)cc(Oc2cc(C)cc(O)c2O)c1,1.0,2
