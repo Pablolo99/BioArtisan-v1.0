@@ -81,18 +81,18 @@ def parse_data(path: str, header: bool) -> dict:
     return clusters_dic
 
 
-def plot_confusion_matrix_heatmap(y_true, y_pred, model_name, output_dir):
+def plot_confusion_matrix_heatmap(y_true, y_pred, model_name, params, output_dir):
     """
     Plot and save a confusion matrix heatmap with labels for positive and negative classes.
 
     :param y_true: True labels.
     :param y_pred: Predicted labels.
     :param str model_name: Name of the model for the plot name.
+    :param dict params: Hyperparameters of the model.
     :param str output_dir: Output directory to save the plot.
     """
     # Calculate confusion matrix
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-    cm = [[tn, fp], [fn, tp]]
+    cm = confusion_matrix(y_true, y_pred)
 
     # Define class labels
     class_labels = ['Negative', 'Positive']
@@ -100,10 +100,15 @@ def plot_confusion_matrix_heatmap(y_true, y_pred, model_name, output_dir):
     # Plot heatmap
     plt.figure(figsize=(5, 5))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_labels, yticklabels=class_labels)
-    plt.title(f"Confusion Matrix for {model_name}")
+    plt.title(f"Confusion Matrix for {model_name}\n{params}")
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
-    plot_path = os.path.join(output_dir, f"{model_name}_confusion_matrix_heatmap.png")
+
+    # Ensure output directory exists
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    plot_path = os.path.join(output_dir, f"{model_name}_confusion_matrix_{params}.png")
     plt.savefig(plot_path)
     plt.close()
     print(f"Saved confusion matrix heatmap to {plot_path}")
@@ -127,7 +132,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
     results = {}
 
-    # define parameter grids for grid search
+    # Define parameter grids for grid search
     param_grids = {
         "RandomForest": {
             'max_depth': [5, 20, 50, 100],
@@ -150,17 +155,26 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
         }
     }
 
+    best_model = None
+    best_f1 = 0.0
+    best_accuracy = 0.0
+    best_hyperparameters = None
+
     for model_name in models.keys():
         model = models[model_name]
         param_grid = param_grids[model_name]
 
         results[model_name] = {}
 
-        param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
+        param_combinations = [dict(zip(param_grid.keys(), values)) for values in
+                              itertools.product(*param_grid.values())]
 
         for params in param_combinations:
             key = '_'.join([f"{param}_{value}" for param, value in params.items()])
             results[model_name][key] = []
+
+            y_true_combined = []
+            y_pred_combined = []
 
             for test_cluster, (test_X, test_y) in clusters_dic.items():
                 train_X = []
@@ -184,21 +198,44 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
                 results[model_name][key].append((accuracy, f1))
 
+                # Collect true and predicted labels
+                y_true_combined.extend(test_y)
+                y_pred_combined.extend(y_pred)
+
+            # Save the confusion matrix heatmap for the current model and hyperparameters
+            plot_confusion_matrix_heatmap(y_true_combined, y_pred_combined, model_name, key, output_dir)
+
             avg_accuracy = np.mean([score[0] for score in results[model_name][key]])
             avg_f1 = np.mean([score[1] for score in results[model_name][key]])
-            print(f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}, Average F1 Score: {avg_f1}")
+            print(
+                f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}, Average F1 Score: {avg_f1}")
 
-        # Get the test data for the current model to calculate the confusion matrix
-        for test_cluster, (test_X, test_y) in clusters_dic.items():
-            train_X = np.concatenate([X for cluster, (X, y) in clusters_dic.items() if cluster != test_cluster])
-            train_y = np.concatenate([y for cluster, (X, y) in clusters_dic.items() if cluster != test_cluster])
-            model.fit(train_X, train_y)
-            y_pred = model.predict(test_X)
+            if avg_f1 > best_f1 or (avg_f1 == best_f1 and avg_accuracy > best_accuracy):
+                best_model = model
+                best_f1 = avg_f1
+                best_accuracy = avg_accuracy
+                best_hyperparameters = params
 
-            # Save the confusion matrix for the current model
-            plot_confusion_matrix_heatmap(test_y, y_pred, model_name, output_dir)
+    if best_model is not None:
+        output_path = os.path.join(output_dir, "best_model.pkl")
+        joblib.dump(best_model, output_path)
+        print(
+            f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
+
+    csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
+    with open(csv_output_path, 'w') as f:
+        f.write("Model,Hyperparameters,Average Accuracy,Average F1 Score\n")
+        for model_name, model_params in results.items():
+            for param_name, param_values in model_params.items():
+                avg_accuracy = np.mean([score[0] for score in param_values])
+                avg_f1 = np.mean([score[1] for score in param_values])
+                f.write(f"{model_name},{param_name},{avg_accuracy},{avg_f1}\n")
+
+    print(f"Storing accuracy results in: {csv_output_path}")
 
     return results
+
+
 
 def plot_results(results: dict, output_dir: str) -> None:
     """
