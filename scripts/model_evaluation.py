@@ -81,36 +81,32 @@ def parse_data(path: str, header: bool) -> dict:
     return clusters_dic
 
 
-def save_confusion_matrix(y_true, y_pred, model_name, param_key, output_dir) -> None:
+def plot_confusion_matrix_heatmap(y_true, y_pred, model_name, output_dir):
     """
-    Save confusion matrix to a text file and plot heatmap.
+    Plot and save a confusion matrix heatmap with labels for positive and negative classes.
 
     :param y_true: True labels.
     :param y_pred: Predicted labels.
-    :param str model_name: Name of the model.
-    :param str param_key: Key representing the model's hyperparameters.
-    :param str output_dir: Output directory.
+    :param str model_name: Name of the model for the plot name.
+    :param str output_dir: Output directory to save the plot.
     """
-    unique_labels = np.unique(np.concatenate([y_true, y_pred]))
-    cm = confusion_matrix(y_true, y_pred, labels=unique_labels)
-    tn, fp, fn, tp = cm.ravel()
-    output_path = os.path.join(output_dir, f"{model_name}_{param_key}_confusion_matrix.txt")
-    with open(output_path, 'w') as f:
-        f.write(f"Confusion Matrix for {model_name} with hyperparameters {param_key}:\n")
-        f.write(f"TN: {tn}  FP: {fp}\n")
-        f.write(f"FN: {fn}  TP: {tp}\n")
-    print(f"Saved confusion matrix to {output_path}")
+    # Calculate confusion matrix
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    cm = [[tn, fp], [fn, tp]]
+
+    # Define class labels
+    class_labels = ['Negative', 'Positive']
 
     # Plot heatmap
     plt.figure(figsize=(5, 5))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-    plt.title(f"Confusion Matrix for {model_name} with hyperparameters {param_key}")
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_labels, yticklabels=class_labels)
+    plt.title(f"Confusion Matrix for {model_name}")
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
-    heatmap_path = os.path.join(output_dir, f"{model_name}_{param_key}_confusion_matrix_heatmap.png")
-    plt.savefig(heatmap_path)
+    plot_path = os.path.join(output_dir, f"{model_name}_confusion_matrix_heatmap.png")
+    plt.savefig(plot_path)
     plt.close()
-    print(f"Saved confusion matrix heatmap to {heatmap_path}")
+    print(f"Saved confusion matrix heatmap to {plot_path}")
 
 
 def train_models(clusters_dic: dict, output_dir: str) -> dict:
@@ -200,7 +196,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
             y_pred = model.predict(test_X)
 
             # Save the confusion matrix for the current model
-            save_confusion_matrix(test_y, y_pred, model_name, key, output_dir)
+            plot_confusion_matrix_heatmap(test_y, y_pred, model_name, output_dir)
 
     return results
 
