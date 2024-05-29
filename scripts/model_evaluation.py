@@ -81,14 +81,16 @@ def parse_data(path: str, header: bool) -> dict:
     return clusters_dic
 
 
-def save_confusion_matrix(cm: np.ndarray, model_name: str, output_dir: str) -> None:
+def save_confusion_matrix(y_true, y_pred, model_name, output_dir) -> None:
     """
     Save confusion matrix to a text file and plot heatmap.
 
-    :param np.ndarray cm: Confusion matrix.
+    :param y_true: True labels.
+    :param y_pred: Predicted labels.
     :param str model_name: Name of the model.
     :param str output_dir: Output directory.
     """
+    cm = confusion_matrix(y_true, y_pred, labels=np.unique(y_true))
     tn, fp, fn, tp = cm.ravel()
     output_path = os.path.join(output_dir, f"{model_name}_confusion_matrix.txt")
     with open(output_path, 'w') as f:
@@ -99,7 +101,7 @@ def save_confusion_matrix(cm: np.ndarray, model_name: str, output_dir: str) -> N
 
     # Plot heatmap
     plt.figure(figsize=(5, 5))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=['Negative', 'Positive'], yticklabels=['Negative', 'Positive'])
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
     plt.title(f"Confusion Matrix for {model_name}")
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
@@ -107,6 +109,7 @@ def save_confusion_matrix(cm: np.ndarray, model_name: str, output_dir: str) -> N
     plt.savefig(heatmap_path)
     plt.close()
     print(f"Saved confusion matrix heatmap to {heatmap_path}")
+
 
 
 def train_models(clusters_dic: dict, output_dir: str) -> dict:
