@@ -10,12 +10,12 @@ import numpy as np
 import itertools
 import joblib
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, DataStructs
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 
@@ -81,6 +81,34 @@ def parse_data(path: str, header: bool) -> dict:
     return clusters_dic
 
 
+def save_confusion_matrix(cm: np.ndarray, model_name: str, output_dir: str) -> None:
+    """
+    Save confusion matrix to a text file and plot heatmap.
+
+    :param np.ndarray cm: Confusion matrix.
+    :param str model_name: Name of the model.
+    :param str output_dir: Output directory.
+    """
+    tn, fp, fn, tp = cm.ravel()
+    output_path = os.path.join(output_dir, f"{model_name}_confusion_matrix.txt")
+    with open(output_path, 'w') as f:
+        f.write(f"Confusion Matrix for {model_name}:\n")
+        f.write(f"TN: {tn}  FP: {fp}\n")
+        f.write(f"FN: {fn}  TP: {tp}\n")
+    print(f"Saved confusion matrix to {output_path}")
+
+    # Plot heatmap
+    plt.figure(figsize=(5, 5))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=['Negative', 'Positive'], yticklabels=['Negative', 'Positive'])
+    plt.title(f"Confusion Matrix for {model_name}")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    heatmap_path = os.path.join(output_dir, f"{model_name}_confusion_matrix_heatmap.png")
+    plt.savefig(heatmap_path)
+    plt.close()
+    print(f"Saved confusion matrix heatmap to {heatmap_path}")
+
+
 def train_models(clusters_dic: dict, output_dir: str) -> dict:
     """
     Train and evaluate models for different algorithms for each cluster.
@@ -123,7 +151,8 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
     }
 
     best_model = None
-    best_score = 0.0
+    best_f1 = 0.0
+    best_accuracy = 0.0
     best_hyperparameters = None
 
     for model_name in models.keys():
@@ -132,8 +161,9 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
         results[model_name] = {}
 
-        param_combinations = [dict(zip(param_grid.keys(), values)) for values in
-                              itertools.product(*param_grid.values())]
+        param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
+
+        aggregated_cm = np.zeros((2, 2), dtype=int)  # Assuming binary classification
 
         for params in param_combinations:
             key = '_'.join([f"{param}_{value}" for param, value in params.items()])
@@ -161,23 +191,27 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
                 results[model_name][key].append((accuracy, f1))
 
+                # Calculate and aggregate confusion matrix
+                cm = confusion_matrix(test_y, y_pred)
+                aggregated_cm += cm
+
             avg_accuracy = np.mean([score[0] for score in results[model_name][key]])
             avg_f1 = np.mean([score[1] for score in results[model_name][key]])
-            print(
-                f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}, Average F1 Score: {avg_f1}")
+            print(f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}, Average F1 Score: {avg_f1}")
 
-            # Use a combined score to select the best model
-            combined_score = (avg_accuracy + avg_f1) / 2
-            if combined_score > best_score:
+            if avg_f1 > best_f1 or (avg_f1 == best_f1 and avg_accuracy > best_accuracy):
                 best_model = model
-                best_score = combined_score
+                best_f1 = avg_f1
+                best_accuracy = avg_accuracy
                 best_hyperparameters = params
+
+        # Save the aggregated confusion matrix for the current model
+        save_confusion_matrix(aggregated_cm, model_name, output_dir)
 
     if best_model is not None:
         output_path = os.path.join(output_dir, "best_model.pkl")
         joblib.dump(best_model, output_path)
-        print(
-            f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
+        print(f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
 
     csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
     with open(csv_output_path, 'w') as f:
@@ -195,55 +229,46 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
 def plot_results(results: dict, output_dir: str) -> None:
     """
-    Plot results of model evaluations.
+    Plot the results of the model training.
 
     :param dict results: Dictionary containing evaluation results.
-    :param str output_dir: Output directory to store plots.
+    :param str output_dir: Output directory to save plots.
     """
     for model_name, model_params in results.items():
-        accuracies = []
-        f1_scores = []
-        param_names = []
+        accuracies = [np.mean([score[0] for score in param_values]) for param_values in model_params.values()]
+        f1_scores = [np.mean([score[1] for score in param_values]) for param_values in model_params.values()]
+        param_keys = list(model_params.keys())
 
-        for param_name, param_values in model_params.items():
-            avg_accuracy = np.mean([score[0] for score in param_values])
-            avg_f1 = np.mean([score[1] for score in param_values])
-            accuracies.append(avg_accuracy)
-            f1_scores.append(avg_f1)
-            param_names.append(param_name)
-
-        x = np.arange(len(param_names))
-
-        plt.figure(figsize=(12, 6))
-        plt.bar(x - 0.2, accuracies, 0.4, label='Accuracy')
-        plt.bar(x + 0.2, f1_scores, 0.4, label='F1 Score')
-
-        plt.xlabel('Hyperparameters')
-        plt.ylabel('Scores')
-        plt.title(f'Model Evaluation for {model_name}')
-        plt.xticks(x, param_names, rotation=90)
+        plt.figure(figsize=(10, 5))
+        plt.plot(param_keys, accuracies, label='Accuracy', marker='o')
+        plt.plot(param_keys, f1_scores, label='F1 Score', marker='o')
+        plt.xlabel('Parameter Combination')
+        plt.ylabel('Score')
+        plt.title(f'{model_name} Performance')
+        plt.xticks(rotation=90)
         plt.legend()
         plt.tight_layout()
 
-        plot_path = os.path.join(output_dir, f"{model_name}_evaluation.png")
+        plot_path = os.path.join(output_dir, f'{model_name}_performance.png')
         plt.savefig(plot_path)
         plt.close()
+        print(f"Saved plot to {plot_path}")
 
 
 def main() -> None:
-    # Turn RDKit warnings off.
+    # turn RDKit warnings off.
     Chem.rdBase.DisableLog("rdApp.*")
 
-    # Parse command line arguments.
+    # parse command line arguments.
     args = cli()
 
-    # Obtain dict of clusters
+    # obtain dict of clusters
     clusters_dic = parse_data(args.input, args.h)
 
-    # Train the models
+    # train the models
     results_models = train_models(clusters_dic, args.output)
 
-    # Create the plot
+    # create the plot
     plot_results(results_models, args.output)
 
 
