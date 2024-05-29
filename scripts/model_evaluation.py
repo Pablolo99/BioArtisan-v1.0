@@ -81,20 +81,22 @@ def parse_data(path: str, header: bool) -> dict:
     return clusters_dic
 
 
-def save_confusion_matrix(y_true, y_pred, model_name, output_dir) -> None:
+def save_confusion_matrix(y_true, y_pred, model_name, param_key, output_dir) -> None:
     """
     Save confusion matrix to a text file and plot heatmap.
 
     :param y_true: True labels.
     :param y_pred: Predicted labels.
     :param str model_name: Name of the model.
+    :param str param_key: Key representing the model's hyperparameters.
     :param str output_dir: Output directory.
     """
-    cm = confusion_matrix(y_true, y_pred, labels=np.unique(y_true))
+    unique_labels = np.unique(np.concatenate([y_true, y_pred]))
+    cm = confusion_matrix(y_true, y_pred, labels=unique_labels)
     tn, fp, fn, tp = cm.ravel()
-    output_path = os.path.join(output_dir, f"{model_name}_confusion_matrix.txt")
+    output_path = os.path.join(output_dir, f"{model_name}_{param_key}_confusion_matrix.txt")
     with open(output_path, 'w') as f:
-        f.write(f"Confusion Matrix for {model_name}:\n")
+        f.write(f"Confusion Matrix for {model_name} with hyperparameters {param_key}:\n")
         f.write(f"TN: {tn}  FP: {fp}\n")
         f.write(f"FN: {fn}  TP: {tp}\n")
     print(f"Saved confusion matrix to {output_path}")
@@ -102,14 +104,13 @@ def save_confusion_matrix(y_true, y_pred, model_name, output_dir) -> None:
     # Plot heatmap
     plt.figure(figsize=(5, 5))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-    plt.title(f"Confusion Matrix for {model_name}")
+    plt.title(f"Confusion Matrix for {model_name} with hyperparameters {param_key}")
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
-    heatmap_path = os.path.join(output_dir, f"{model_name}_confusion_matrix_heatmap.png")
+    heatmap_path = os.path.join(output_dir, f"{model_name}_{param_key}_confusion_matrix_heatmap.png")
     plt.savefig(heatmap_path)
     plt.close()
     print(f"Saved confusion matrix heatmap to {heatmap_path}")
-
 
 
 def train_models(clusters_dic: dict, output_dir: str) -> dict:
@@ -153,11 +154,6 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
         }
     }
 
-    best_model = None
-    best_f1 = 0.0
-    best_accuracy = 0.0
-    best_hyperparameters = None
-
     for model_name in models.keys():
         model = models[model_name]
         param_grid = param_grids[model_name]
@@ -165,8 +161,6 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
         results[model_name] = {}
 
         param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
-
-        aggregated_cm = np.zeros((2, 2), dtype=int)  # Assuming binary classification
 
         for params in param_combinations:
             key = '_'.join([f"{param}_{value}" for param, value in params.items()])
@@ -194,41 +188,21 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
 
                 results[model_name][key].append((accuracy, f1))
 
-                # Calculate and aggregate confusion matrix
-                cm = confusion_matrix(test_y, y_pred)
-                aggregated_cm += cm
-
             avg_accuracy = np.mean([score[0] for score in results[model_name][key]])
             avg_f1 = np.mean([score[1] for score in results[model_name][key]])
             print(f"Model: {model_name}, Hyperparameters: {key}, Average Accuracy: {avg_accuracy}, Average F1 Score: {avg_f1}")
 
-            if avg_f1 > best_f1 or (avg_f1 == best_f1 and avg_accuracy > best_accuracy):
-                best_model = model
-                best_f1 = avg_f1
-                best_accuracy = avg_accuracy
-                best_hyperparameters = params
+        # Get the test data for the current model to calculate the confusion matrix
+        for test_cluster, (test_X, test_y) in clusters_dic.items():
+            train_X = np.concatenate([X for cluster, (X, y) in clusters_dic.items() if cluster != test_cluster])
+            train_y = np.concatenate([y for cluster, (X, y) in clusters_dic.items() if cluster != test_cluster])
+            model.fit(train_X, train_y)
+            y_pred = model.predict(test_X)
 
-        # Save the aggregated confusion matrix for the current model
-        save_confusion_matrix(aggregated_cm, model_name, output_dir)
-
-    if best_model is not None:
-        output_path = os.path.join(output_dir, "best_model.pkl")
-        joblib.dump(best_model, output_path)
-        print(f"Storing the best model ({best_model.__class__.__name__}) with hyperparameters {best_hyperparameters} in: {output_path}")
-
-    csv_output_path = os.path.join(output_dir, "accuracy_results.csv")
-    with open(csv_output_path, 'w') as f:
-        f.write("Model,Hyperparameters,Average Accuracy,Average F1 Score\n")
-        for model_name, model_params in results.items():
-            for param_name, param_values in model_params.items():
-                avg_accuracy = np.mean([score[0] for score in param_values])
-                avg_f1 = np.mean([score[1] for score in param_values])
-                f.write(f"{model_name},{param_name},{avg_accuracy},{avg_f1}\n")
-
-    print(f"Storing accuracy results in: {csv_output_path}")
+            # Save the confusion matrix for the current model
+            save_confusion_matrix(test_y, y_pred, model_name, key, output_dir)
 
     return results
-
 
 def plot_results(results: dict, output_dir: str) -> None:
     """
