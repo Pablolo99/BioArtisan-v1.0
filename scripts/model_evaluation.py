@@ -125,7 +125,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
     """
     models = {
         "RandomForest": RandomForestClassifier(),
-        "SVM": SVC(),
+        "SVM": SVC(probability = True),
         "GBM": GradientBoostingClassifier(),
         "KNN": KNeighborsClassifier()
     }
