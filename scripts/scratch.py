@@ -1,25 +1,16 @@
-import csv
+import pandas as pd
 
+# Read the CSV file
+df = pd.read_csv('C:/Users/pablo/Downloads/antibacterial_NRP.csv')
 
-def remove_last_column_and_modify_antibacterial(input_file, output_file):
-    with open(input_file, 'r', newline='') as infile, open(output_file, 'w', newline='') as outfile:
-        reader = csv.reader(infile)
-        writer = csv.writer(outfile)
+# Fill NaN values in the 'antibacterial' column with 0
+df['antibacterial'] = df['antibacterial'].fillna(0)
 
-        # Read the header
-        header = next(reader)
-        writer.writerow(header[:-1])  # Write all columns except the last one
+# Convert the 'antibacterial' column to integers
+df['antibacterial'] = df['antibacterial'].astype(int)
 
-        for row in reader:
-            if len(row) > 1:  # Check to make sure the row isn't empty
-                # Modify the 'antibacterial' column
-                antibacterial_value = row[2]
-                if antibacterial_value == '0':
-                    row[2] = ''  # Replace '0' with an empty string
-                writer.writerow(row[:-1])  # Write all columns except the last one
+# Replace values greater than 1 with 1
+df.loc[df['antibacterial'] > 1, 'antibacterial'] = 1
 
-
-if __name__ == "__main__":
-    input_file = 'C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/antibacterial_PK.csv'
-    output_file = 'C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/antibacterial_PK_clean.csv'
-    remove_last_column_and_modify_antibacterial(input_file, output_file)
+# Save the modified DataFrame back to the same CSV file
+df.to_csv('C:/Users/pablo/Downloads/antibacterial_NRP.csv', index=False)
