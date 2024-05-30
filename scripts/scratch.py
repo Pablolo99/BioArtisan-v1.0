@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Read the CSV file
-df = pd.read_csv('C:/Users/pablo/Downloads/antibacterial_NRP.csv')
+df = pd.read_csv('C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/antibacterial_PK_clean.csv')
 
 # Fill NaN values in the 'antibacterial' column with 0
 df['antibacterial'] = df['antibacterial'].fillna(0)
@@ -13,4 +13,4 @@ df['antibacterial'] = df['antibacterial'].astype(int)
 df.loc[df['antibacterial'] > 1, 'antibacterial'] = 1
 
 # Save the modified DataFrame back to the same CSV file
-df.to_csv('C:/Users/pablo/Downloads/antibacterial_NRP.csv', index=False)
+df.to_csv('C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/antibacterial_PK.csv', index=False)
