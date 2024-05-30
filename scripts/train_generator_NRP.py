@@ -46,8 +46,9 @@ def cli()-> argparse.Namespace:
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
-nrp_reaction = '[N:1]-[C:2](-[*:3])-[C:4](=[O:5])(-[S]).[N:7]-[C:8](-[*:9])-[C:10](=[O:11])(-[S:12]) >> [N:7](-[C:4](=[O:5])-[C:2](-[N:1])(-[*:3]))-[C:8](-[*:9])-[C:10](=[O:11])(-[S:12])'
+nrp_reaction = '([N:1]-[C:2](-[*:3])-[C:4](=[O:5])(-[S]).[N:7]-[C:8](-[*:9])-[C:10](=[O:11])(-[S:12])) >> ([N:7](-[C:4](=[O:5])-[C:2](-[N:1])(-[*:3]))-[C:8](-[*:9])-[C:10](=[O:11])(-[S:12]))'
 nrp_rxn = rdChemReactions.ReactionFromSmarts(nrp_reaction)
+
 
 extenders = [
     'NCC(C1=CN=CN1)C(=O)O',
@@ -173,6 +174,117 @@ starters = [
     'NC[C@@H]1CC[C@H](CC1)C(O)=O',
     'C1[C@H](ONC1=O)[C@@H](C(=O)O)N'
 ]
+
+extenders2 = [
+    'NCC(C1=CN=CN1)C(=O)S',
+    'CCCCC(N)C(=O)S',
+    'CSCCC@HC(=O)S',
+    'C1=CC=C(C=C1)CC(C(=O)S)N',
+    'CC@HC@HC(=O)S',
+    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)S)N',
+    'CC(C)C(C(=O)O)N → CC(C)C(C(=O)S)N',
+    'NC(CCCNC(=N)N)C(=O)S',
+    'CC(C(=O)S)N',
+    'NC(CC(=O)N)C(=O)S',
+    'NC(CC(=O)S)C(=O)S',
+    'C(CS)C(=O)S',
+    'NC(CCC(=O)N)C(=O)S',
+    'NC(CCC(=O)S)C(=O)S',
+    'C(C(=O)S)N',
+    'C1CC(NC1)C(=O)S',
+    'C(CO)C(=O)S',
+    'C1=CC=C(C=C1)CC(C(=O)S)N',
+    'SC(C@@HC@@H/C=C/C(C)=C/C@HC@@HCC1=CC=CC=C1)=O',
+    'O=C(S)CCN',
+    'O=C(S)c1ccc(N)cc1',
+    'NCCCC(=O)S',
+    'SC(C@@HCSCCN)=O',
+    'O=C(S)C(N)(C)C',
+    'O=C(CN)CCC(=O)S',
+    'O=C(S)[C@H]1NCC1',
+    'O=C(S)C@@HCCON',
+    'NC@@HC(S)=O',
+    'O=C(S)C(C(=O)S)CC(N)C(=O)S',
+    'C(C(C(=O)S)N)Cl',
+    'NC(CCCNC(N)=O)C(S)=O',
+    'C(C(C(=O)S)N)SSCC(C(=O)S)N',
+    'C=C(C(=O)S)N',
+    'O=C(S)C@@HCCCC@@HC(=O)O',
+    'C1=CC(=C(C=C1C@@HN)O)O',
+    'C1C(C=CC(C1SCC(C(=O)S)N)(CC(=O)O)O)O',
+    'C(CS)C(C(=O)S)N',
+    'O=C(S)C(N)CCO',
+    'C1=CC(=CC=C1C(C(=O)S)N)O',
+    'C(C(C(=O)S)O)N',
+    'O=C(S)C@@HCSCC@HC(=O)S',
+    'CC(C)C(CC(=O)S)N',
+    'CCCCC(N)C(S)=O',
+    'CCCC(C(=O)S)N',
+    'CC(C)(CC(C(=O)S)N)C(F)F',
+    'O=C(S)C@@HCCCN',
+    'SC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
+    'O=C(S)[C@H]1NC(=O)CC1',
+    'O=C1NC(=O)ON1CC@HC(=O)S',
+    'CCNC(=O)CCC(N)C(S)=O',
+    'CCNC(=O)CCC@HC(=O)S',
+    'NC[C@@H]1CCC@HC(S)=O'
+]
+
+starters2 = [
+    'NCC(C1=CN=CN1)C(=O)S',
+    'CCCCC(N)C(=O)S',
+    'CSCCC@HC(=O)S',
+    'C1=CC=C(C=C1)CC(C(=O)S)N',
+    'CC@HC@HC(=O)S',
+    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)S)N',
+    'CC(C)C(C(=O)O)N → CC(C)C(C(=O)S)N',
+    'NC(CCCNC(=N)N)C(=O)S',
+    'CC(C(=O)S)N',
+    'NC(CC(=O)N)C(=O)S',
+    'NC(CC(=O)S)C(=O)S',
+    'C(CS)C(=O)S',
+    'NC(CCC(=O)N)C(=O)S',
+    'NC(CCC(=O)S)C(=O)S',
+    'C(C(=O)S)N',
+    'C1CC(NC1)C(=O)S',
+    'C(CO)C(=O)S',
+    'C1=CC=C(C=C1)CC(C(=O)S)N',
+    'SC(C@@HC@@H/C=C/C(C)=C/C@HC@@HCC1=CC=CC=C1)=O',
+    'O=C(S)CCN',
+    'O=C(S)c1ccc(N)cc1',
+    'NCCCC(=O)S',
+    'SC(C@@HCSCCN)=O',
+    'O=C(S)C(N)(C)C',
+    'O=C(CN)CCC(=O)S',
+    'O=C(S)[C@H]1NCC1',
+    'O=C(S)C@@HCCON',
+    'NC@@HC(S)=O',
+    'O=C(S)C(C(=O)S)CC(N)C(=O)S',
+    'C(C(C(=O)S)N)Cl',
+    'NC(CCCNC(N)=O)C(S)=O',
+    'C(C(C(=O)S)N)SSCC(C(=O)S)N',
+    'C=C(C(=O)S)N',
+    'O=C(S)C@@HCCCC@@HC(=O)O',
+    'C1=CC(=C(C=C1C@@HN)O)O',
+    'C1C(C=CC(C1SCC(C(=O)S)N)(CC(=O)O)O)O',
+    'C(CS)C(C(=O)S)N',
+    'O=C(S)C(N)CCO',
+    'C1=CC(=CC=C1C(C(=O)S)N)O',
+    'C(C(C(=O)S)O)N',
+    'O=C(S)C@@HCSCC@HC(=O)S',
+    'CC(C)C(CC(=O)S)N',
+    'CCCCC(N)C(S)=O',
+    'CCCC(C(=O)S)N',
+    'CC(C)(CC(C(=O)S)N)C(F)F',
+    'O=C(S)C@@HCCCN',
+    'SC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
+    'O=C(S)[C@H]1NC(=O)CC1',
+    'O=C1NC(=O)ON1CC@HC(=O)S',
+    'CCNC(=O)CCC(N)C(S)=O',
+    'CCNC(=O)CCC@HC(=O)S',
+    'NC[C@@H]1CCC@HC(S)=O'
+]
+
 
 cyc_reactions = [
     '([O:4]=[C:3]([*:2])[*:1].[C:6]([*:5])([*:7])[*:8])>>([O:4][C:3]([*:2])([*:1])[C:6]([*:5])([*:7])[*:8])',
@@ -410,12 +522,12 @@ class Molecule(_MOL, Node):
         if mol.SMILES :
 
             # make a progression using each of the extender unions
-            for submol in extenders:
+            for submol in extenders2:
                 children |= mol.make_progress(submol, cyc_reactions, predictor_model)
 
         #if mol had not started
         if not mol.SMILES :
-            for submol in starters:
+            for submol in starters2:
                 children |= mol.make_progress(submol, cyc_reactions, predictor_model)
 
         return children
@@ -435,10 +547,10 @@ class Molecule(_MOL, Node):
 
         # if the molecule has not started just use the starters
         if mol.SMILES is None:
-            possible_sub_ads = starters
+            possible_sub_ads = starters2
         # else use the extenders
         else:
-            possible_sub_ads = extenders
+            possible_sub_ads = extenders2
 
         # otherwise, make a progress in the molecule object
         possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions, predictor_model)
