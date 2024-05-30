@@ -25,21 +25,20 @@ def cli() -> argparse.Namespace:
                         help="Output directory to store results.")
     parser.add_argument("-n", "--n_clusters", type=int, required=True,
                         help="Number of clusters.")
-    parser.add_argument("--min_cluster_size", type=int, default=20,
+    parser.add_argument("--size_min", type=int, default=20,
                         help="Minimum size of each cluster.")
-    parser.add_argument("--max_cluster_size", type=int, default=None,
-                        help="Maximum size of each cluster.")
     return parser.parse_args()
 
-def perform_clustering(data, n_clusters, min_cluster_size, max_cluster_size):
+
+def perform_clustering(data, n_clusters, size_min):
     cluster_alg = KMeansConstrained(
         n_clusters=n_clusters,
-        size_min=min_cluster_size,
-        size_max=max_cluster_size,
+        size_min=size_min,
         random_state=42
     )
     labels = cluster_alg.fit_predict(data)
     return labels
+
 
 def perform_dimensionality_reduction(data, method):
     if method == "PCA":
@@ -56,11 +55,13 @@ def perform_dimensionality_reduction(data, method):
     reduced_data = dim_red.fit_transform(data)
     return reduced_data
 
+
 def save_cluster_info_to_csv(data, labels, output_dir, method):
     data['cluster'] = labels + 1  # Adding 1 to the labels to start clusters from 1
     output_filename = os.path.join(output_dir, f"cluster_info_{method}.csv")
     data.to_csv(output_filename, index=False)
     return output_filename
+
 
 def calculate_antibacterial_proportion(cluster_info_file, output_dir, method):
     data = pd.read_csv(cluster_info_file)
@@ -71,13 +72,14 @@ def calculate_antibacterial_proportion(cluster_info_file, output_dir, method):
         for i in range(1, num_clusters + 1):
             cluster_data = data[data['cluster'] == i]
             total_molecules = len(cluster_data)
-            antibacterial_molecules = cluster_data['antibacterial'].notnull().sum()
+            antibacterial_molecules = (cluster_data['antibacterial'] == 1).sum()
             percentage = (antibacterial_molecules / total_molecules) * 100
             f.write(f"cluster_{i}_total_molecules: {total_molecules}\n")
             f.write(f"cluster_{i}_antibacterial_molecules: {antibacterial_molecules}\n")
             f.write(f"proportion_antibacteria_cluster_{i}: {percentage:.2f}\n")
 
-def main(input_file, output_dir, n_clusters, min_cluster_size, max_cluster_size):
+
+def main(input_file, output_dir, n_clusters, size_min):
     # Load data from CSV
     data = pd.read_csv(input_file)
 
@@ -96,11 +98,8 @@ def main(input_file, output_dir, n_clusters, min_cluster_size, max_cluster_size)
     # Define dimensionality reduction processes
     reduction_methods = ["PCA", "MDS", "t-SNE", "UMAP"]
 
-    # Generate plots
-    cluster_colors = [mcolors.to_rgba(f"C{i}") for i in range(n_clusters)]
-
     # Perform clustering
-    labels = perform_clustering(fp_array, n_clusters, min_cluster_size, max_cluster_size)
+    labels = perform_clustering(fp_array, n_clusters, size_min)
 
     # Save cluster information to CSV
     cluster_info_file = save_cluster_info_to_csv(data.copy(), labels, output_dir, "ConstrainedKMeans")
@@ -115,7 +114,7 @@ def main(input_file, output_dir, n_clusters, min_cluster_size, max_cluster_size)
         # Plot the clusters without distinguishing antibacterial molecules
         plt.figure(figsize=(12, 6))
         unique_labels = np.unique(labels)
-        for i, color in zip(unique_labels, cluster_colors):
+        for i, color in zip(unique_labels, mcolors.TABLEAU_COLORS.values()):
             mask = (labels == i)
             plt.scatter(reduced_data[mask, 0], reduced_data[mask, 1], label=f'Cluster {i + 1}', color=color, alpha=0.6)
 
@@ -129,8 +128,8 @@ def main(input_file, output_dir, n_clusters, min_cluster_size, max_cluster_size)
 
         # Use the same reduced data to plot antibacterial vs. non-antibacterial molecules
         plt.figure(figsize=(12, 6))
-        antibacterial_mask = (data['antibacterial'].notnull())
-        non_antibacterial_mask = (data['antibacterial'].isnull())
+        antibacterial_mask = (data['antibacterial'] == 1)
+        non_antibacterial_mask = (data['antibacterial'] == 0)
 
         plt.scatter(reduced_data[non_antibacterial_mask, 0], reduced_data[non_antibacterial_mask, 1],
                     label=f'Non-Antibacterial ({np.sum(non_antibacterial_mask)})', color='blue', alpha=0.6)
@@ -146,6 +145,7 @@ def main(input_file, output_dir, n_clusters, min_cluster_size, max_cluster_size)
                     bbox_inches='tight')
         plt.close()
 
+
 if __name__ == "__main__":
     args = cli()
-    main(args.input, args.output, args.n_clusters, args.min_cluster_size, args.max_cluster_size)
+    main(args.input, args.output, args.n_clusters, args.size_min)
