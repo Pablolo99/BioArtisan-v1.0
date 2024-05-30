@@ -64,7 +64,7 @@ def parse_data(path: str, header: bool) -> dict:
         data = pd.read_csv(path, header=0)
     else:
         data = pd.read_csv(path, header=None)
-        data.columns = ["id", "smiles", "antibacterial", "Polyketide", "cluster"]
+        data.columns = ["id", "smiles", "antibacterial", "cluster"]
 
     clusters_dic = {}
     clusters = np.unique(data['cluster'])  # Unique cluster values
@@ -144,7 +144,7 @@ def train_models(clusters_dic: dict, output_dir: str) -> dict:
         },
         "GBM": {
             'loss': ['log_loss', 'exponential'],
-            'n_estimators': [100, 500, 1000],
+            'n_estimators': [100, 500],
             'max_depth': [3, 5, 10]
         },
         "KNN": {
