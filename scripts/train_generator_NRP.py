@@ -70,7 +70,6 @@ extenders = [
     'C1CC(NC1)C(=O)O',
     'C(CO)C(=O)O',
     'C1=CC=C(C=C1)CC(C(=O)O)N',
-
     'OC([C@@H](C)[C@@H](N)/C=C/C(C)=C/[C@H](C)[C@@H](OC)CC1=CC=CC=C1)=O',
     'O=C(O)CCN',
     'O=C(O)c1ccc(N)cc1',
@@ -133,7 +132,6 @@ starters = [
     'C1CC(NC1)C(=O)O',
     'C(CO)C(=O)O',
     'C1=CC=C(C=C1)CC(C(=O)O)N',
-
     'OC([C@@H](C)[C@@H](N)/C=C/C(C)=C/[C@H](C)[C@@H](OC)CC1=CC=CC=C1)=O',
     'O=C(O)CCN',
     'O=C(O)c1ccc(N)cc1',
