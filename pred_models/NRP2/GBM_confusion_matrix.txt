@@ -1,3 +1,0 @@
-Confusion Matrix for GBM:
-TN: 12356  FP: 3925
-FN: 3926  TP: 5173

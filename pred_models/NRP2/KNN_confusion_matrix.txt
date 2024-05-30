@@ -1,3 +1,0 @@
-Confusion Matrix for KNN:
-TN: 97756  FP: 7004
-FN: 36465  TP: 23655
