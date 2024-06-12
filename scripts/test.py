@@ -140,6 +140,7 @@ def main(input_file1, input_file2, output_dir):
     plt.xlabel('Molecules')
     plt.ylabel('QED Value')
     plt.title('QED Values for New Molecules')
+    plt.xticks(range(len(data2)))
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f"qed_values_bar_plot.png"))
     plt.close()
