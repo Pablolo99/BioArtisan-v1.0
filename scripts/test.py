@@ -10,12 +10,11 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import QED
 
-def cli() -> argparse.Namespace:
+def cli():
     """
     Command Line Interface
 
     :return: Parsed command line arguments.
-    :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("-i1", "--input1", type=str, required=True,
@@ -25,7 +24,6 @@ def cli() -> argparse.Namespace:
     parser.add_argument("-o", "--output", type=str, required=True,
                         help="Output directory to store results.")
     return parser.parse_args()
-
 
 def perform_dimensionality_reduction(data, method):
     if method == "PCA":
@@ -41,26 +39,6 @@ def perform_dimensionality_reduction(data, method):
 
     reduced_data = dim_red.fit_transform(data)
     return reduced_data
-
-def plot_qed_values(input_file, output_dir):
-    # Load data
-    data = pd.read_csv(input_file)
-
-    # Extract molecule IDs and QED values
-    molecule_ids = data['ID'].tolist()
-    qed_values = data['QED'].tolist()
-
-    # Plot
-    plt.figure(figsize=(10, 6))
-    plt.bar(range(len(molecule_ids)), qed_values, color='skyblue')
-    plt.xlabel('Molecule ID')
-    plt.ylabel('QED Value')
-    plt.title('QED Values for New Molecules')
-    plt.xticks(range(len(molecule_ids)), molecule_ids, rotation=45)
-    plt.tight_layout()
-
-    # Save plot
-    plt.savefig(os.path.join(output_dir, 'qed_values_bar_plot.png'))
 
 def calculate_qed(smiles_list):
     qed_scores = []
@@ -148,8 +126,24 @@ def main(input_file1, input_file2, output_dir):
         plt.savefig(os.path.join(output_dir, f"antibacterial_vs_nonantibacterial_vs_new_{reduction_method}.png"), bbox_inches='tight')
         plt.close()
 
+        # Calculate QED for new molecules
+        qed_scores = calculate_qed(smiles_list2)
+        data2['QED'] = qed_scores
 
-    plot_qed_values(args.input2, args.output)
+        # Save data2 with QED scores to a new file
+        qed_output_file = os.path.join(output_dir, f"new_molecules_with_qed_{reduction_method}.csv")
+        data2.to_csv(qed_output_file, index=False)
+
+        # Plot QED values for new molecules
+        plt.figure(figsize=(10, 6))
+        plt.bar(range(len(data2)), data2['QED'], color='skyblue')
+        plt.xlabel('Molecule ID')
+        plt.ylabel('QED Value')
+        plt.title('QED Values for New Molecules')
+        plt.xticks(range(len(data2)), data2['ID'], rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f"qed_values_bar_plot_{reduction_method}.png"))
+        plt.close()
 
 if __name__ == "__main__":
     args = cli()
