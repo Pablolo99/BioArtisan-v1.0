@@ -126,24 +126,24 @@ def main(input_file1, input_file2, output_dir):
         plt.savefig(os.path.join(output_dir, f"antibacterial_vs_nonantibacterial_vs_new_{reduction_method}.png"), bbox_inches='tight')
         plt.close()
 
-        # Calculate QED for new molecules
-        qed_scores = calculate_qed(smiles_list2)
-        data2['QED'] = qed_scores
+    # Calculate QED for new molecules
+    qed_scores = calculate_qed(smiles_list2)
+    data2['QED'] = qed_scores
 
-        # Save data2 with QED scores to a new file
-        qed_output_file = os.path.join(output_dir, f"new_molecules_with_qed_{reduction_method}.csv")
-        data2.to_csv(qed_output_file, index=False)
+    # Save data2 with QED scores to a new file
+    qed_output_file = os.path.join(output_dir, f"new_molecules_with_qed.csv")
+    data2.to_csv(qed_output_file, index=False)
 
-        # Plot QED values for new molecules
-        plt.figure(figsize=(10, 6))
-        plt.bar(range(len(data2)), data2['QED'], color='skyblue')
-        plt.xlabel('Molecule ID')
-        plt.ylabel('QED Value')
-        plt.title('QED Values for New Molecules')
-        plt.xticks(range(len(data2)), data2['ID'], rotation=45)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"qed_values_bar_plot_{reduction_method}.png"))
-        plt.close()
+    # Plot QED values for new molecules
+    plt.figure(figsize=(10, 6))
+    plt.bar(range(len(data2)), data2['QED'], color='skyblue')
+    plt.xlabel('Molecule ID')
+    plt.ylabel('QED Value')
+    plt.title('QED Values for New Molecules')
+    plt.xticks(range(len(data2)), data2['ID'], rotation=45)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"qed_values_bar_plot.png"))
+    plt.close()
 
 if __name__ == "__main__":
     args = cli()
