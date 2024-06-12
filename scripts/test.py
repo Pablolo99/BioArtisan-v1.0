@@ -178,8 +178,8 @@ def main(input_file1, input_file2, output_dir):
         # Plot antibacterial vs. non-antibacterial molecules
         plt.figure(figsize=(12, 6))
 
-        plt.scatter(reduced_data2[:, 0], reduced_data2[:, 1],
-                    label=f'New Molecules ({len(smiles_list2)})', color='black', alpha=0.6)
+        #plt.scatter(reduced_data2[:, 0], reduced_data2[:, 1],
+                    #label=f'New Molecules ({len(smiles_list2)})', color='black', alpha=0.6)
 
         plt.scatter(reduced_data1[:, 0], reduced_data1[:, 1],
                     label=f'Original Molecules ({len(smiles_list1)})', color='blue', alpha=0.6)
