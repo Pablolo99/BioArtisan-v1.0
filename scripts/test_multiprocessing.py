@@ -4,14 +4,13 @@ Description:    Generates a csv file with theorical molecules
 Usage:          python script --model model.pkl --output outputfile.txt --num_molecules 1 --pred_limit 0.5
 
 """
-import concurrent.futures
+
 import warnings
 import argparse
 import time
-import pstats
-import random
 import joblib
-import cProfile
+import multiprocessing as mp
+
 from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, rdChemReactions
 from rdkit.Chem import MolFromSmiles, MolToSmiles
@@ -19,7 +18,7 @@ import math
 import typing as ty
 from abc import ABC, abstractmethod
 from random import choice
-from typing import List
+
 from collections import defaultdict, namedtuple
 
 
@@ -43,6 +42,7 @@ def cli()-> argparse.Namespace:
     parser.add_argument("--output", required=True, help="Path to output file .txt" )
     parser.add_argument("--num_molecules", required=True, help="Number of wanted molecules")
     parser.add_argument("--pred_limit", required=True, help="Lower limit predictor value desired")
+    parser.add_argument("--num_threads", required=True, help="Number of threads to use")
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
@@ -497,7 +497,6 @@ class Molecule(_MOL, Node):
                         cyc_mol = Molecule(cyc_SMILES, new_pred_value, check, new_count)
                         all_newmol.add(cyc_mol)
 
-
             return all_newmol
 
 
@@ -510,6 +509,7 @@ def new_mol() -> Molecule:
     """
     mol = Molecule(SMILES=None, pred_value=0.0, terminal=None, num_adds=0)
     return mol
+
 
 def gen_molecule(predictor_model) -> Molecule:
     """
@@ -528,62 +528,51 @@ def gen_molecule(predictor_model) -> Molecule:
             else:
                 tree.do_rollout(mol, predictor_model)
 
+
         mol = tree.choose(mol)
         if mol.terminal:
             break
 
-    return
+    return mol
 
-
-
+def gen_valid_molecule(predictor_model, pred_limit: float) -> Molecule:
+    """
+    Generates a valid molecule with pred_value >= pred_limit.
+    """
+    while True:
+        mol = gen_molecule(predictor_model)
+        if mol.pred_value >= pred_limit:
+            return mol
 def main() -> None:
-    """
-    Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
-
-    """
-
-    # set the arguments from terminal line
+    """"""
+    # Set the arguments from the command line
     args = cli()
 
     predictor_model = joblib.load(args.model)
     output_file = args.output
     num_wanted = int(args.num_molecules)
     pred_limit = float(args.pred_limit)
-    num_threads = int(args.threads)
+    num_threads = int(args.num_threads)
 
-    # turn warnings off.
+    # Turn off RDKit and Python warnings
     Chem.rdBase.DisableLog("rdApp.error")
     warnings.filterwarnings('ignore')
     RDLogger.DisableLog('rdApp.error')
 
-    # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+    start_time = time.time()
+
+    # Use multiprocessing to generate valid molecules
+    with mp.Pool(processes=num_threads) as pool:
+        jobs = [pool.apply_async(gen_valid_molecule, (predictor_model, pred_limit)) for _ in range(num_wanted)]
+        results = [job.get() for job in jobs]
+
+    # Write the results to the output file
     with open(output_file, 'w') as generated_molecules:
         generated_molecules.write("ID\tSMILES\tpred_value\n")
+        for idx, mol in enumerate(results):
+            generated_molecules.write(f"{idx + 1}\t{mol.SMILES}\t{mol.pred_value}\n")
 
-    num_mols = 0
-
-    while num_mols < num_wanted:
-        mol = gen_molecule(predictor_model)
-        if mol.pred_value >= pred_limit:
-            #write info in tsv format
-            with open(output_file, 'a') as generated_molecules:
-                generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
-                if num_mols < num_wanted:
-                    generated_molecules.write('\n')
-            num_mols += 1
-
-    end_time = time.time()
-    execution_time = end_time - start_time
-
-    print(f"El script tardó {execution_time} segundos en ejecutarse.")
-
-    print(f"{num_mols} molecules with pred_value >= {pred_limit} generated and saved to {output_file}")
-
-
+    print(f"Time taken: {time.time() - start_time:.2f} seconds")
 
 if __name__ == "__main__":
-    cProfile.run("main()", "profile_output.txt")
-    stats = pstats.Stats("profile_output.txt")
-    stats.strip_dirs()
-    stats.sort_stats("cumulative")
-    stats.print_stats()
+    main()
