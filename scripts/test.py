@@ -8,8 +8,6 @@ Usage:          python script --model model.pkl --output outputfile.txt --num_mo
 import warnings
 import argparse
 import time
-import pstats
-import random
 import joblib
 import multiprocessing as mp
 
@@ -20,8 +18,7 @@ import math
 import typing as ty
 from abc import ABC, abstractmethod
 from random import choice
-from functools import partial
-from typing import List
+
 from collections import defaultdict, namedtuple
 
 
@@ -45,6 +42,7 @@ def cli()-> argparse.Namespace:
     parser.add_argument("--output", required=True, help="Path to output file .txt" )
     parser.add_argument("--num_molecules", required=True, help="Number of wanted molecules")
     parser.add_argument("--pred_limit", required=True, help="Lower limit predictor value desired")
+    parser.add_argument("--num_threads", required=True, help="Number of threads to use")
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
@@ -537,18 +535,16 @@ def gen_molecule(predictor_model) -> Molecule:
 
     return mol
 
-def generate_valid_mol(pred_limit: float, predictor_model) -> Molecule:
-    """"""
+def gen_valid_molecule(predictor_model, pred_limit: float) -> Molecule:
+    """
+    Generates a valid molecule with pred_value >= pred_limit.
+    """
     while True:
         mol = gen_molecule(predictor_model)
         if mol.pred_value >= pred_limit:
             return mol
-
 def main() -> None:
-    """
-    Main function to generate molecules until the desired number of molecules with pred_value >= pred_limit is reached
-    """
-
+    """"""
     # Set the arguments from the command line
     args = cli()
 
@@ -556,43 +552,27 @@ def main() -> None:
     output_file = args.output
     num_wanted = int(args.num_molecules)
     pred_limit = float(args.pred_limit)
+    num_threads = int(args.num_threads)
 
     # Turn off RDKit and Python warnings
     Chem.rdBase.DisableLog("rdApp.error")
     warnings.filterwarnings('ignore')
     RDLogger.DisableLog('rdApp.error')
 
-    # Start time
     start_time = time.time()
 
-    # Create a multiprocessing pool
-    num_threads = min(mp.cpu_count() - 2, 8)
-    pool = mp.Pool(processes=num_threads)
+    # Use multiprocessing to generate valid molecules
+    with mp.Pool(processes=num_threads) as pool:
+        jobs = [pool.apply_async(gen_valid_molecule, (predictor_model, pred_limit)) for _ in range(num_wanted)]
+        results = [job.get() for job in jobs]
 
-    # Use partial to create a function with pred_limit and predictor_model arguments fixed
-    partial_generate_wrapper = partial(generate_wrapper, (pred_limit, predictor_model))
+    # Write the results to the output file
+    with open(output_file, 'w') as generated_molecules:
+        generated_molecules.write("ID\tSMILES\tpred_value\n")
+        for idx, mol in enumerate(results):
+            generated_molecules.write(f"{idx + 1}\t{mol.SMILES}\t{mol.pred_value}\n")
 
-    # Generate molecules concurrently
-    valid_molecules_written = 0
-    for mol in pool.imap_unordered(partial_generate_wrapper, range(num_wanted)):
-        with open(output_file, 'a') as generated_molecules:
-            generated_molecules.write(f"{valid_molecules_written + 1}\t{mol.SMILES}\t{mol.pred_value}\n")
-        valid_molecules_written += 1
-        print(f"Molecule {valid_molecules_written} with pred_value >= {pred_limit} generated and saved to {output_file}")
-
-        # Break if the desired number of molecules is reached
-        if valid_molecules_written >= num_wanted:
-            break
-
-    # Close the multiprocessing pool
-    pool.close()
-    pool.join()
-
-    # End time
-    end_time = time.time()
-    execution_time = end_time - start_time
-
-    print(f"The script took {execution_time} seconds to execute.")
+    print(f"Time taken: {time.time() - start_time:.2f} seconds")
 
 if __name__ == "__main__":
     main()

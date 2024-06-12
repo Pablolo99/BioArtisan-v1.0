@@ -46,213 +46,15 @@ def cli()-> argparse.Namespace:
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
-nrp_reaction = '([N:1][C:2]([*:3])[C:4](=[O:5])([S]).[N:7][C:8]([*:9])[C:10](=[O:11])([S:12])) >> ([N:7]([C:4](=[O:5])-[C:2]([N:1])([*:3]))[C:8]([*:9])[C:10](=[O:11])([S:12]))'
+nrp_reaction = '[N:1][C:2]([*:3])[C:4](=[O:5])([S]).[N:7][C:8]([*:9])[C:10](=[O:11])([S:12])>>[N:7]([C:4](=[O:5])-[C:2]([N:1])([*:3]))[C:8]([*:9])[C:10](=[O:11])([S:12])'
 nrp_rxn = rdChemReactions.ReactionFromSmarts(nrp_reaction)
 
 
-extenders = [
-    'NCC(C1=CN=CN1)C(=O)O',
-    #'CC[C@H](C)[C@@H](C(=O)O)N',
-    #'CC(C)C[C@H](C(=O)O)N',
-    'CCCCC(N)C(=O)O',
-    #'CSCC[C@H](N)C(=O)O',
-    'C1=CC=C(C=C1)CC(C(=O)O)N',
-    #'C[C@H](O)[C@H](N)C(=O)O',
-    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)O)N',
-    'CC(C)C(C(=O)O)N',
-    'NC(CCCNC(=N)N)C(=O)O',
-    'CC(C(=O)O)N',
-    'NC(CC(=O)N)C(=O)O',
-    'NC(CC(=O)O)C(=O)O',
-    'C(CS)C(=O)O',
-    'NC(CCC(=O)N)C(=O)O',
-    'NC(CCC(=O)O)C(=O)O',
-    'C(C(=O)O)N',
-    'C1CC(NC1)C(=O)O',
-    'C(CO)C(=O)O',
-    'C1=CC=C(C=C1)CC(C(=O)O)N',
-    #'OC([C@@H](C)[C@@H](N)/C=C/C(C)=C/[C@H](C)[C@@H](OC)CC1=CC=CC=C1)=O',
-    'O=C(O)CCN',
-    'O=C(O)c1ccc(N)cc1',
-    'NCCCC(=O)O',
-    #'OC([C@@H](N)CSCCN)=O',
-    'O=C(O)C(N)(C)C',
-    'O=C(CN)CCC(=O)O',
-    #'O=C(O)[C@H]1NCC1',
-    #'O=C(O)[C@@H](N)CCON',
-    #'N[C@@H](CCON=C(N)N)C(O)=O',
-    'O=C(O)C(C(=O)O)CC(N)C(=O)O',
-    'C(C(C(=O)O)N)Cl',
-    'NC(CCCNC(N)=O)C(O)=O',
-    'C(C(C(=O)O)N)SSCC(C(=O)O)N',
-    'C=C(C(=O)O)N',
-    #'O=C(O)[C@@H](N)CCC[C@@H](N)C(=O)O',
-    #'C1=CC(=C(C=C1[C@@H](C(=O)O)N)O)O',
-    #'C1=CC(=C(C=C1C[C@@H](C(=O)O)N)C2=C(C=CC(=C2)C[C@@H](C(=O)O)N)O)O',
-    #'C1[C@H](NC(=N)N1)C[C@@H](C(=O)O)N',
-    'C1C(C=CC(C1SCC(C(=O)O)N)(CC(=O)O)O)O',
-    'C(CS)C(C(=O)O)N',
-    'O=C(O)C(N)CCO',
-    'C1=CC(=CC=C1C(C(=O)O)N)O',
-    #'C1[C@H](CN[C@@H]1C(=O)O)O',
-    #'C(CCNC[C@@H](CCN)O)C[C@@H](C(=O)O)N',
-    'C(C(C(=O)O)O)N',
-    #'O=C(O)[C@@H](N)CSC[C@H](N)C(=O)O',
-    'CC(C)C(CC(=O)O)N',
-    'CCCCC(N)C(O)=O',
-    'CCCC(C(=O)O)N',
-    'CC(C)(CC(C(=O)O)N)C(F)F',
-    #'O=C(O)[C@@H](N)CCCN',
-    #'CC(C)([C@H](C(=O)O)N)S',
-    'OC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
-    #'O=C(O)[C@H]1NC(=O)CC1',
-    #'O=C1NC(=O)ON1C[C@H](N)C(=O)O',
-    'CCNC(=O)CCC(N)C(O)=O'
-    #'CCNC(=O)CC[C@H](N)C(=O)O',
-    #'NC[C@@H]1CC[C@H](CC1)C(O)=O',
-    #'C1[C@H](ONC1=O)[C@@H](C(=O)O)N'
-]
-starters = [
-    'NCC(C1=CN=CN1)C(=O)O',
-    'CC[C@H](C)[C@@H](C(=O)O)N',
-    'CC(C)C[C@H](C(=O)O)N',
-    'CCCCC(N)C(=O)O',
-    'CSCC[C@H](N)C(=O)O',
-    'C1=CC=C(C=C1)CC(C(=O)O)N',
-    'C[C@H](O)[C@H](N)C(=O)O',
-    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)O)N',
-    'CC(C)C(C(=O)O)N',
-    'NC(CCCNC(=N)N)C(=O)O',
-    'CC(C(=O)O)N',
-    'NC(CC(=O)N)C(=O)O',
-    'NC(CC(=O)O)C(=O)O',
-    'C(CS)C(=O)O',
-    'NC(CCC(=O)N)C(=O)O',
-    'NC(CCC(=O)O)C(=O)O',
-    'C(C(=O)O)N',
-    'C1CC(NC1)C(=O)O',
-    'C(CO)C(=O)O',
-    'C1=CC=C(C=C1)CC(C(=O)O)N',
-    'OC([C@@H](C)[C@@H](N)/C=C/C(C)=C/[C@H](C)[C@@H](OC)CC1=CC=CC=C1)=O',
-    'O=C(O)CCN',
-    'O=C(O)c1ccc(N)cc1',
-    'NCCCC(=O)O',
-    'OC([C@@H](N)CSCCN)=O',
-    'O=C(O)C(N)(C)C',
-    'O=C(CN)CCC(=O)O',
-    'O=C(O)[C@H]1NCC1',
-    'O=C(O)[C@@H](N)CCON',
-    'N[C@@H](CCON=C(N)N)C(O)=O',
-    'O=C(O)C(C(=O)O)CC(N)C(=O)O',
-    'C(C(C(=O)O)N)Cl',
-    'NC(CCCNC(N)=O)C(O)=O',
-    'C(C(C(=O)O)N)SSCC(C(=O)O)N',
-    'C=C(C(=O)O)N',
-    'O=C(O)[C@@H](N)CCC[C@@H](N)C(=O)O',
-    'C1=CC(=C(C=C1[C@@H](C(=O)O)N)O)O',
-    'C1=CC(=C(C=C1C[C@@H](C(=O)O)N)C2=C(C=CC(=C2)C[C@@H](C(=O)O)N)O)O',
-    'C1[C@H](NC(=N)N1)C[C@@H](C(=O)O)N',
-    'C1C(C=CC(C1SCC(C(=O)O)N)(CC(=O)O)O)O',
-    'C(CS)C(C(=O)O)N',
-    'O=C(O)C(N)CCO',
-    'C1=CC(=CC=C1C(C(=O)O)N)O',
-    'C1[C@H](CN[C@@H]1C(=O)O)O',
-    'C(CCNC[C@@H](CCN)O)C[C@@H](C(=O)O)N',
-    'C(C(C(=O)O)O)N',
-    'O=C(O)[C@@H](N)CSC[C@H](N)C(=O)O',
-    'CC(C)C(CC(=O)O)N',
-    'CCCCC(N)C(O)=O',
-    'CCCC(C(=O)O)N',
-    'CC(C)(CC(C(=O)O)N)C(F)F',
-    'O=C(O)[C@@H](N)CCCN',
-    'CC(C)([C@H](C(=O)O)N)S',
-    'OC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
-    'O=C(O)[C@H]1NC(=O)CC1',
-    'O=C1NC(=O)ON1C[C@H](N)C(=O)O',
-    'CCNC(=O)CCC(N)C(O)=O',
-    'CCNC(=O)CC[C@H](N)C(=O)O',
-    'NC[C@@H]1CC[C@H](CC1)C(O)=O',
-    'C1[C@H](ONC1=O)[C@@H](C(=O)O)N'
-]
-
 extenders2 = [
-    'NCC(C1=CN=CN1)C(=O)S',
-    'CCCCC(N)C(=O)S',
-    'C1=CC=C(C=C1)CC(C(=O)S)N',
-    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)S)N',
-    'CC(C)C(C(=O)O)N → CC(C)C(C(=O)S)N',
-    'NC(CCCNC(=N)N)C(=O)S',
-    'CC(C(=O)S)N',
-    'NC(CC(=O)N)C(=O)S',
-    'NC(CC(=O)S)C(=O)S',
-    'C(CS)C(=O)S',
-    'NC(CCC(=O)N)C(=O)S',
-    'NC(CCC(=O)S)C(=O)S',
-    'C(C(=O)S)N',
-    'C1CC(NC1)C(=O)S',
-    'C(CO)C(=O)S',
-    'C1=CC=C(C=C1)CC(C(=O)S)N',
-    'O=C(S)CCN',
-    'O=C(S)c1ccc(N)cc1',
-    'NCCCC(=O)S',
-    'O=C(S)C(N)(C)C',
-    'O=C(CN)CCC(=O)S',
-    'O=C(S)C(C(=O)S)CC(N)C(=O)S',
-    'C(C(C(=O)S)N)Cl',
-    'NC(CCCNC(N)=O)C(S)=O',
-    'C(C(C(=O)S)N)SSCC(C(=O)S)N',
-    'C=C(C(=O)S)N',
-    'C1C(C=CC(C1SCC(C(=O)S)N)(CC(=O)O)O)O',
-    'C(CS)C(C(=O)S)N',
-    'O=C(S)C(N)CCO',
-    'C1=CC(=CC=C1C(C(=O)S)N)O',
-    'C(C(C(=O)S)O)N',
-    'CC(C)C(CC(=O)S)N',
-    'CCCCC(N)C(S)=O',
-    'CCCC(C(=O)S)N',
-    'CC(C)(CC(C(=O)S)N)C(F)F',
-    'SC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
-    'CCNC(=O)CCC(N)C(S)=O'
+    'C=C(C(=O)S)N'
 ]
-
 starters2 = [
-    'NCC(C1=CN=CN1)C(=O)S',
-    'CCCCC(N)C(=O)S',
-    'C1=CC=C(C=C1)CC(C(=O)S)N',
-    'C1=CC=C2C(=C1)C(=CN2)CC(C(=O)S)N',
-    'CC(C)C(C(=O)O)N → CC(C)C(C(=O)S)N',
-    'NC(CCCNC(=N)N)C(=O)S',
-    'CC(C(=O)S)N',
-    'NC(CC(=O)N)C(=O)S',
-    'NC(CC(=O)S)C(=O)S',
-    'C(CS)C(=O)S',
-    'NC(CCC(=O)N)C(=O)S',
-    'NC(CCC(=O)S)C(=O)S',
-    'C(C(=O)S)N',
-    'C1CC(NC1)C(=O)S',
-    'C(CO)C(=O)S',
-    'C1=CC=C(C=C1)CC(C(=O)S)N',
-    'O=C(S)CCN',
-    'O=C(S)c1ccc(N)cc1',
-    'NCCCC(=O)S',
-    'O=C(S)C(N)(C)C',
-    'O=C(CN)CCC(=O)S',
-    'O=C(S)C(C(=O)S)CC(N)C(=O)S',
-    'C(C(C(=O)S)N)Cl',
-    'NC(CCCNC(N)=O)C(S)=O',
-    'C(C(C(=O)S)N)SSCC(C(=O)S)N',
-    'C=C(C(=O)S)N',
-    'C1C(C=CC(C1SCC(C(=O)S)N)(CC(=O)O)O)O',
-    'C(CS)C(C(=O)S)N',
-    'O=C(S)C(N)CCO',
-    'C1=CC(=CC=C1C(C(=O)S)N)O',
-    'C(C(C(=O)S)O)N',
-    'CC(C)C(CC(=O)S)N',
-    'CCCCC(N)C(S)=O',
-    'CCCC(C(=O)S)N',
-    'CC(C)(CC(C(=O)S)N)C(F)F',
-    'SC(=O)C(N(C)(C)C)Cc2cnc1c2cccc1I',
-    'CCNC(=O)CCC(N)C(S)=O'
+    'C=C(C(=O)S)N'
 ]
 
 
@@ -277,9 +79,9 @@ cyc_reactions = [
     '([C:1](=[O:8])[C:2][C:3](=[O])[C:4][C:5](=[O])[C:6][C:7](=[O]))>>([C:1](=[O:8])[C:2]1=[C:3][C:4]=[C:5][C:6]=[C:7]1)',
     '([C:1](=[O:12])[C:2][C:3](=[O:13])[C:4][C:5](=[O:14])[C:6][C:7](=[O])[C:8][C:9](=[O:16])[C:10][C:11](=[O]))>>([C:1]([O:12])1[C:2]2[C:3]([O:13])=[C:4][C:5]([O:14])=[C:6][C:7]=2[C:8]=[C:9]([O:16])[C:10]=1[C:11])',
     '([C:1](=[O:15])[C:2][C:3](=[O:16])[C:4][C:5](=[O:17])[C:6][C:7](=[O])[C:8][C:9](=[O:19])[C:10][C:11](=[O:20])[C:12][C:13](=[O:21])[C:14])>>([C:1]([O:15])1[C:2]2[C:3]([O:16])=[C:4][C:5]([O:17])=[C:6][C:7]=2[C:8]=[C:9]([O:19]3)[C:10]=1[C:11](=[O:20])[C:12][C:13]3([O:21])[C:14])',
-    #'([*:1]-[C:2](=[O:3])(-[*]).[N:5]-[C:6](-[*:9])-[*:7]) >> ([*:1]-[C:2](=[O:3])-[N:5]-[C:6](-[*:9])-[*:7])',
-    #'([*:1]-[C:2](=[O])(-[*:4]).[*:5]-[C:6](=[O:7])-[N:8]-[C:9](-[*:10])-[*:11]) >> ([*:5]-[C:6](=[O:7])-[N:8]([C:2](-[*:4])-[*:1])-[C:9](-[*:10])-[*:11])',
-    #'([*:1]-[C:2](-[O])(-[*:4]).[*:5]-[C:6](=[O:7])-[N:8]-[C:9](-[*:10])-[*:11]) >> ([*:5]-[C:6](=[O:7])-[N:8]([C:2](-[*:4])-[*:1])-[C:9](-[*:10])-[*:11])'
+    '([*:1]-[C:2](=[O:3])(-[*]).[N:5]-[C:6](-[*:9])-[*:7]) >> ([*:1]-[C:2](=[O:3])-[N:5]-[C:6](-[*:9])-[*:7])',
+    '([*:1]-[C:2](=[O])(-[*:4]).[*:5]-[C:6](=[O:7])-[N:8]-[C:9](-[*:10])-[*:11]) >> ([*:5]-[C:6](=[O:7])-[N:8]([C:2](-[*:4])-[*:1])-[C:9](-[*:10])-[*:11])',
+    '([*:1]-[C:2](-[O])(-[*:4]).[*:5]-[C:6](=[O:7])-[N:8]-[C:9](-[*:10])-[*:11]) >> ([*:5]-[C:6](=[O:7])-[N:8]([C:2](-[*:4])-[*:1])-[C:9](-[*:10])-[*:11])'
 ]
 
 
@@ -524,6 +326,7 @@ class Molecule(_MOL, Node):
 
         # otherwise, make a progress in the molecule object
         possible_children = mol.make_progress(choice(possible_sub_ads), cyc_reactions, predictor_model)
+        print(possible_children)
         #print(possible_children)
         possible_child = choice(list(possible_children))
         #print(possible_child)
@@ -542,8 +345,9 @@ class Molecule(_MOL, Node):
         str_SMILES = mol.SMILES
         if str_SMILES is None:
             return -1.0
-
+        print(str_SMILES)
         molec = Chem.MolFromSmiles(str_SMILES)
+        print(molec)
         fp = AllChem.GetMorganFingerprintAsBitVect(molec, 2, nBits=2048)
         mol_fingerprint = list(fp)
 
@@ -571,7 +375,7 @@ class Molecule(_MOL, Node):
         mol2 = Chem.MolFromSmiles(subunit)
 
         products = nrp_rxn.RunReactants((mol1, mol2))
-
+        print(products)
         if products:
             # Convert the product molecule to SMILES
             new_SMILES = Chem.MolToSmiles(products[0][0])
@@ -677,7 +481,7 @@ class Molecule(_MOL, Node):
                 for cyc_rxn in reactions:
 
                     cyc_products = just_linear_mol.cyclization(cyc_rxn)
-
+                    print(cyc_products)
                     if cyc_products is None:
                         continue
 

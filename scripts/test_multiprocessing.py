@@ -532,13 +532,58 @@ def gen_molecule(predictor_model) -> Molecule:
         if mol.terminal:
             break
 
-    return mol
+    return
 
-model = joblib.load("C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/pred_models/model_RF.pkl")
+
+
+def main() -> None:
+    """
+    Main function to generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+
+    """
+
+    # set the arguments from terminal line
+    args = cli()
+
+    predictor_model = joblib.load(args.model)
+    output_file = args.output
+    num_wanted = int(args.num_molecules)
+    pred_limit = float(args.pred_limit)
+    num_threads = int(args.threads)
+
+    # turn warnings off.
+    Chem.rdBase.DisableLog("rdApp.error")
+    warnings.filterwarnings('ignore')
+    RDLogger.DisableLog('rdApp.error')
+
+    # generate molecules until the desired number of molecules with pred_value = 1.0 is reached
+    with open(output_file, 'w') as generated_molecules:
+        generated_molecules.write("ID\tSMILES\tpred_value\n")
+
+    num_mols = 0
+
+    while num_mols < num_wanted:
+        mol = gen_molecule(predictor_model)
+        if mol.pred_value >= pred_limit:
+            #write info in tsv format
+            with open(output_file, 'a') as generated_molecules:
+                generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
+                if num_mols < num_wanted:
+                    generated_molecules.write('\n')
+            num_mols += 1
+
+    end_time = time.time()
+    execution_time = end_time - start_time
+
+    print(f"El script tardó {execution_time} segundos en ejecutarse.")
+
+    print(f"{num_mols} molecules with pred_value >= {pred_limit} generated and saved to {output_file}")
+
+
 
 if __name__ == "__main__":
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = [executor.submit(gen_molecule, model) for _ in range(3)]
-        for f in concurrent.futures.as_completed(results):
-            print(f.result())
-
+    cProfile.run("main()", "profile_output.txt")
+    stats = pstats.Stats("profile_output.txt")
+    stats.strip_dirs()
+    stats.sort_stats("cumulative")
+    stats.print_stats()

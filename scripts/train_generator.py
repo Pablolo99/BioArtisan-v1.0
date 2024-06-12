@@ -46,17 +46,59 @@ def cli()-> argparse.Namespace:
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
-pk_reaction = '[S][C:2](=[O:3])([*:4]).[S:5][C:6](=[O:7])[*:8][C](=[O])[O]>>[S:5][C:6](=[O:7])[*:8][C:2](=[O:3])([*:4])'
+#pk_reaction = '[S][C:2](=[O:3])([*:4]).[S:5][C:6](=[O:7])[*:8][C](=[O])[O]>>[S:5][C:6](=[O:7])[*:8][C:2](=[O:3])([*:4])'
+#pk_rxn = rdChemReactions.ReactionFromSmarts(pk_reaction)
+pk_reaction = '[S:1][C:2].[OH]-[C](=[O])-[C:3][C:4][S]>>[C:2][C:3][C:4][S:1]'
+pk_reaction_db = '[S:1][C:2].[OH]-[C](=[O])-[C:3]=[C:4][S]>>[C:2][C:3]=[C:4][S:1]'
 pk_rxn = rdChemReactions.ReactionFromSmarts(pk_reaction)
+pk_rxn_db = rdChemReactions.ReactionFromSmarts(pk_reaction_db)
 
 extenders = [
-    'O=C(O)CC(=O)S',
-    'CC(C(=O)O)C(=O)S',
-    'CCC(C(=O)O)C(=O)S',
-    'O=C(O)C(CCCl)C(=O)S',
-    'O=C(O)C(O)C(=O)S',
-    'COC(C(=O)O)C(=O)S',
-    'NC(C(=O)O)C(=O)S'
+    '[S][C](=[O])[CH2][C](=[O])[OH]',
+    '[S][C]([OH])=[CH][C](=[O])[OH]',
+    '[S][C](=[O])[CH1]([CH3])[C](=[O])[OH]',
+    '[S][C]([OH])=[C]([CH3])[C](=[O])[OH]',
+    '[S][C](=[O])[C]([CH3])([CH3])[C](=[O])[OH]',
+    '[S][C](=[O])[CH1]([CH2][CH3])[C](=[O])[OH]',
+    '[S][C]([OH])=[C]([CH2][CH3])[C](=[O])[OH]',
+    '[S][C](=[O])[CH1]([OH])[C](=[O])[OH]',
+    '[S][C]([OH])=[C]([OH])[C](=[O])[OH]',
+    '[S][C](=[O])[CH1]([CH2][OH])[C](=[O])[OH]',
+    '[S][C]([OH])=[C]([CH2][OH])[C](=[O])[OH]',
+    '[S][C](=[O])[C]([CH3])([OH])[C](=[O])[OH]',
+    '[S][C](=[CH2])[CH2][C](=[O])[OH]',
+    '[S][C](=[CH2])[CH1]([CH3])[C](=[O])[OH]',
+    '[S][C](=[CH2])[CH1]([CH3])[C](=[O])[OH]',
+    '[S][C](=[CH2])[C](=[O])[C](=[O])[OH]',
+    '[S][C](=[O])[C](=[O])[C](=[O])[OH]',
+    '[S][CH1]([OH])[CH2][C](=[O])[OH]',
+    '[S][CH1]([OH])[CH1]([CH3])[C](=[O])[OH]',
+    '[S][CH1]([OH])[C]([CH3])([CH3])[C](=[O])[OH]',
+    '[S][CH1]([OH])[C]([CH2][CH3])[C](=[O])[OH]',
+    '[S][CH1]([OH])[CH1]([OH])[C](=[O])[OH]',
+    '[S][CH1]([OH])[CH1]([CH2][OH])[C](=[O])[OH]',
+    '[S][CH1]([OH])[CH0]([CH3])([OH])[C](=[O])[OH]',
+    '[S][CH0]([CH3])([OH])[CH2][C](=[O])[OH]',
+    '[S][CH0]([CH3])([OH])[CH1]([CH3])[C](=[O])[OH]',
+    '[S][CH0]([CH3])([OH])[CH1]([OH])[C](=[O])[OH]',
+    '[S][CH]([OH])[C](=[O])[C](=[O])[OH]',
+    '[S][CH]([OH])[CH]([NH2])[C](=[O])[OH]',
+    '[S][CH1]=[CH1][C](=[O])[OH]',
+    '[S][CH1]=[C]([CH2][CH3])[C](=[O])[OH]',
+    '[S][C]([CH3])=[CH1][C](=[O])[OH]',
+    '[S][CH1]=[C]([CH0]#[N])[C](=[O])[OH]',
+    '[S][CH2][CH2][C](=[O])[OH]',
+    '[S][CH2][CH1]([CH3])[C](=[O])[OH]',
+    '[S][CH2][C]([CH3])([CH3])[C](=[O])[OH]',
+    '[S][CH2][CH1]([CH2][CH3])[C](=[O])[OH]',
+    '[S][CH2][CH]([OH])[C](=[O])[OH]',
+    '[S][CH2][CH]([CH2][OH])[C](=[O])[OH]',
+    '[S][CH2][C]([CH3])([OH])[C](=[O])[OH]',
+    '[S][CH1]([CH3])[CH2][C](=[O])[OH]',
+    '[S][CH1]([CH3])[CH1]([OH])[C](=[O])[OH]',
+    '[S][CH2][C](=[O])[C](=[O])[OH]',
+    '[S][CH1]=[C]([OH])[C](=[O])[OH]',
+    '[S][CH2][C](=[CH2])[C](=[O])[OH]'
 ]
 starters = [
     'CC(S)=O',
@@ -288,7 +330,7 @@ class Molecule(_MOL, Node):
         :return: Set of successor molecules.
         :rtype: ty.Set["Molecule"]
         """
-        if mol.terminal:  # If the proc
+        if mol.terminal:
             return set()
 
         children = set()
@@ -374,7 +416,14 @@ class Molecule(_MOL, Node):
         mol1 = Chem.MolFromSmiles(mol.SMILES)
         mol2 = Chem.MolFromSmiles(subunit)
 
-        products = pk_rxn.RunReactants((mol1, mol2))
+        # check for the pattern:
+        pattern = Chem.MolFromSmarts('[OH]-[C](=[O])-[C:3]=[C:4][S]')
+        if mol2.HasSubstructMatch(pattern):
+            reaction = pk_rxn_db
+        else:
+            reaction = pk_rxn
+
+        products = reaction.RunReactants((mol1, mol2))
 
         if products:
             # Convert the product molecule to SMILES
@@ -427,7 +476,7 @@ class Molecule(_MOL, Node):
         if mol.pred_value > 0.9:
             return True
 
-        if mol.num_adds >= 10:
+        if mol.num_adds >= 13:
             return True
 
         adds = mol.num_adds
