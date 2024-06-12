@@ -137,10 +137,9 @@ def main(input_file1, input_file2, output_dir):
     # Plot QED values for new molecules
     plt.figure(figsize=(10, 6))
     plt.bar(range(len(data2)), data2['QED'], color='skyblue')
-    plt.xlabel('Molecule ID')
+    plt.xlabel('Molecules')
     plt.ylabel('QED Value')
     plt.title('QED Values for New Molecules')
-    plt.xticks(range(len(data2)), data2['ID'], rotation=45)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f"qed_values_bar_plot.png"))
     plt.close()
