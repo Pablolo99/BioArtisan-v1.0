@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import QED
 
 def cli() -> argparse.Namespace:
     """
@@ -41,6 +42,36 @@ def perform_dimensionality_reduction(data, method):
     reduced_data = dim_red.fit_transform(data)
     return reduced_data
 
+def plot_qed_values(input_file, output_dir):
+    # Load data
+    data = pd.read_csv(input_file)
+
+    # Extract molecule IDs and QED values
+    molecule_ids = data['ID'].tolist()
+    qed_values = data['QED'].tolist()
+
+    # Plot
+    plt.figure(figsize=(10, 6))
+    plt.bar(range(len(molecule_ids)), qed_values, color='skyblue')
+    plt.xlabel('Molecule ID')
+    plt.ylabel('QED Value')
+    plt.title('QED Values for New Molecules')
+    plt.xticks(range(len(molecule_ids)), molecule_ids, rotation=45)
+    plt.tight_layout()
+
+    # Save plot
+    plt.savefig(os.path.join(output_dir, 'qed_values_bar_plot.png'))
+
+def calculate_qed(smiles_list):
+    qed_scores = []
+    for smiles in smiles_list:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is not None:
+            qed_score = QED.qed(mol)
+            qed_scores.append(qed_score)
+        else:
+            qed_scores.append(None)
+    return qed_scores
 
 def main(input_file1, input_file2, output_dir):
     # Load data from CSV
@@ -117,6 +148,8 @@ def main(input_file1, input_file2, output_dir):
         plt.savefig(os.path.join(output_dir, f"antibacterial_vs_nonantibacterial_vs_new_{reduction_method}.png"), bbox_inches='tight')
         plt.close()
 
+
+    plot_qed_values(args.input, args.output)
 
 if __name__ == "__main__":
     args = cli()
