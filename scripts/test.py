@@ -186,11 +186,11 @@ def main(input_file1, input_file2, output_dir):
     # Print or save the calculated metrics
     metrics_output_file = os.path.join(output_dir, f"metrics_{reduction_method}.txt")
     with open(metrics_output_file, 'w') as f:
-        f.write(f"Validity of New Molecules: {validity_new:.2f}\n")
-        f.write(f"Uniqueness of New Molecules: {uniqueness_new:.2f}\n")
-        f.write(f"Novelty of New Molecules: {novelty_new:.2f}\n")
-        f.write(f"KL Divergence (Antibacterial): {kl_divergence_antibacterial:.2f}\n")
-        f.write(f"KL Divergence (Non-Antibacterial): {kl_divergence_non_antibacterial:.2f}\n")
+        f.write(f"Validity of New Molecules: {validity_new:.5f}\n")
+        f.write(f"Uniqueness of New Molecules: {uniqueness_new:.5f}\n")
+        f.write(f"Novelty of New Molecules: {novelty_new:.5f}\n")
+        f.write(f"KL Divergence (Antibacterial): {kl_divergence_antibacterial:.5f}\n")
+        f.write(f"KL Divergence (Non-Antibacterial): {kl_divergence_non_antibacterial:.5f}\n")
 
 if __name__ == "__main__":
     args = cli()
