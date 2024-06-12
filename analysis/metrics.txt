@@ -1,0 +1,4 @@
+Validity: 1.00
+Uniqueness: 0.98
+Novelty: 1.00
+KL Divergence: 2.06
