@@ -149,7 +149,7 @@ def main(input_file1, input_file2, output_dir):
         plt.close()
 
 
-    plot_qed_values(args.input, args.output)
+    plot_qed_values(args.input2, args.output)
 
 if __name__ == "__main__":
     args = cli()
