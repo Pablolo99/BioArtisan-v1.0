@@ -9,7 +9,6 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import MDS, TSNE
 import umap
 from scipy.stats import entropy
-from rdkit.Chem import rdMolDescriptors
 
 
 def cli():
@@ -81,19 +80,10 @@ def calculate_kl_divergence(p, q, epsilon=1e-10):
     return entropy(p, q)
 
 
-def calculate_fcd(new_mols, original_mols):
-    # This function requires a pretrained model and is typically more complex.
-    # Here we provide a placeholder for the calculation.
-    # In practice, you would use a model like ChemNet to compute embeddings and then FCD.
-    fcd = np.random.random()  # Placeholder for demonstration purposes
-    return fcd
-
-
 def calculate_molecular_properties(mols):
     molecular_weights = [Descriptors.MolWt(mol) for mol in mols]
     logp_values = [Descriptors.MolLogP(mol) for mol in mols]
     return molecular_weights, logp_values
-
 
 def main(input_file1, input_file2, output_dir):
     # Load data from CSV
@@ -126,8 +116,6 @@ def main(input_file1, input_file2, output_dir):
 
     kl_divergence = (kl_div_weights + kl_div_logp) / 2
 
-    # FCD (Placeholder)
-    fcd = calculate_fcd(valid_mols2, valid_mols1)
 
     # QED Scores
     qed_scores = calculate_qed(valid_smiles2)
@@ -155,7 +143,6 @@ def main(input_file1, input_file2, output_dir):
         f.write(f"Uniqueness: {uniqueness:.2f}\n")
         f.write(f"Novelty: {novelty:.2f}\n")
         f.write(f"KL Divergence: {kl_divergence:.2f}\n")
-        f.write(f"FCD: {fcd:.2f}\n")
 
     # Dimensionality reduction and plotting
     molecules1 = [Chem.MolFromSmiles(smiles) for smiles in smiles_list1]
