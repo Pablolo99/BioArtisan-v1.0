@@ -56,7 +56,35 @@ def calculate_qed(smiles_list):
     return qed_scores
 
 
-def plot_qed_values(csv_file, output_file):
+def perform_dimensionality_reduction(data, method):
+    if method == "PCA":
+        dim_red = PCA(n_components=2)
+    elif method == "MDS":
+        dim_red = MDS(n_components=2, random_state=42)
+    elif method == "t-SNE":
+        dim_red = TSNE(n_components=2, random_state=42)
+    elif method == "UMAP":
+        dim_red = umap.UMAP(n_components=2)
+    else:
+        raise ValueError("Invalid dimensionality reduction method.")
+
+    reduced_data = dim_red.fit_transform(data)
+    return reduced_data
+
+
+def calculate_qed(smiles_list):
+    qed_scores = []
+    for smiles in smiles_list:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is not None:
+            qed_score = QED.qed(mol)
+            qed_scores.append(qed_score)
+        else:
+            qed_scores.append(None)
+    return qed_scores
+
+
+def plot_qed_values(csv_file, output_file, top_n=10):
     # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file)
 
@@ -65,24 +93,29 @@ def plot_qed_values(csv_file, output_file):
 
     # Create the bar plot
     plt.figure(figsize=(12, 6))
-    bars = plt.bar(df['ID'], df['QED'], color='skyblue')
+    bars = plt.bar(df.index, df['QED'], color='skyblue')
 
-    # Highlight the top 5 highest QED values
-    top5 = df.head(5)
-    for i, idx in enumerate(top5.index):
+    # Highlight the top N highest QED values
+    top_n_df = df.head(top_n)
+    for i, idx in enumerate(top_n_df.index):
         bars[idx].set_color('orange')
-        plt.text(idx, top5['QED'].iloc[i] + 0.01, f'Top {i + 1}', ha='center', color='orange')
+        plt.text(idx, top_n_df['QED'].iloc[i] + 0.01, f'Top {i + 1}', ha='center', color='orange')
 
     # Set the labels and title
     plt.xlabel('ID')
     plt.ylabel('QED Value')
     plt.title('QED Values of Molecules')
 
-    # Set x-axis ticks
+    # Set x-axis ticks to 1, 5, 10, 15, 20...
     plt.xticks(ticks=range(0, len(df), 5), labels=range(1, len(df) + 1, 5))
 
     # Save the plot
     plt.savefig(output_file)
+    plt.close()
+
+    # Save the top N molecules to a new file
+    top_n_output_file = os.path.splitext(output_file)[0] + f"_top{top_n}.csv"
+    top_n_df.to_csv(top_n_output_file, index=False)
 
 
 def calculate_validity(smiles_list):
