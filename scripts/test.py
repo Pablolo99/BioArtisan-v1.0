@@ -44,19 +44,6 @@ def perform_dimensionality_reduction(data, method):
     reduced_data = dim_red.fit_transform(data)
     return reduced_data
 
-
-def calculate_qed(smiles_list):
-    qed_scores = []
-    for smiles in smiles_list:
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is not None:
-            qed_score = QED.qed(mol)
-            qed_scores.append(qed_score)
-        else:
-            qed_scores.append(None)
-    return qed_scores
-
-
 def perform_dimensionality_reduction(data, method):
     if method == "PCA":
         dim_red = PCA(n_components=2)
@@ -114,10 +101,10 @@ def plot_qed_values(csv_file, output_file, top_n=10):
     tick_positions = [i * 10 for i in range(num_ticks)]
     plt.xticks(ticks=tick_positions, labels=[i * 10 + 1 for i in range(num_ticks)])
 
-    # Add a manual tick for 200
-    if len(df) % 10 != 0:
-        plt.xticks(ticks=list(plt.xticks()[0]) + [len(df) - 1],
-                   labels=list(plt.xticks()[1]) + [len(df)])
+    # Add a manual tick for 200 if it's not included
+    if tick_positions[-1] != len(df) - 1:
+        plt.xticks(ticks=tick_positions + [len(df) - 1],
+                   labels=[i * 10 + 1 for i in range(num_ticks)] + [len(df)])
 
     # Save the plot
     plt.savefig(output_file)
