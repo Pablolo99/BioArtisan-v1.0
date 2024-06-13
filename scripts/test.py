@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 from sklearn.decomposition import PCA
 from sklearn.manifold import MDS, TSNE
@@ -106,8 +107,17 @@ def plot_qed_values(csv_file, output_file, top_n=10):
     plt.ylabel('QED Value')
     plt.title(f'QED Values of Molecules')
 
-    # Set x-axis ticks to 1, 5, 10, 15, 20...
-    plt.xticks(ticks=range(0, len(df), 9), labels=range(1, len(df) + 1, 9))
+    # Calculate the number of ticks needed to cover the range from 1 to len(df)
+    num_ticks = math.ceil(len(df) / 10) + 1
+
+    # Set x-axis ticks to 1, 10, 20, 30, ..., 200
+    tick_positions = [i * 10 for i in range(num_ticks)]
+    plt.xticks(ticks=tick_positions, labels=[i * 10 + 1 for i in range(num_ticks)])
+
+    # Add a manual tick for 200
+    if len(df) % 10 != 0:
+        plt.xticks(ticks=list(plt.xticks()[0]) + [len(df) - 1],
+                   labels=list(plt.xticks()[1]) + [len(df)])
 
     # Save the plot
     plt.savefig(output_file)
