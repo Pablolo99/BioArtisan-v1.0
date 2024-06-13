@@ -107,7 +107,8 @@ def plot_qed_values(csv_file, output_file, top_n=10):
     plt.title(f'QED Values of Molecules')
 
     # Set x-axis ticks to 1, 5, 10, 15, 20...
-    plt.xticks(ticks=range(0, len(df), 10), labels=range(1, len(df) + 1, 10))
+    plt.xticks(ticks=range(0, len(df), 9), labels=range(1, len(df) + 1, 9))
+    plt.xticks(ticks=list(plt.xticks()[0]) + [len(df) - 1], labels=list(plt.xticks()[1]) + [200])
 
     # Save the plot
     plt.savefig(output_file)
