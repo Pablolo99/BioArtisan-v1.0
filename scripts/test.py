@@ -56,6 +56,39 @@ def calculate_qed(smiles_list):
     return qed_scores
 
 
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+def plot_qed_values(csv_file, output_file):
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(csv_file)
+
+    # Sort the DataFrame by QED values in descending order
+    df = df.sort_values(by='QED', ascending=False)
+
+    # Create the bar plot
+    plt.figure(figsize=(12, 6))
+    bars = plt.bar(df['ID'], df['QED'], color='skyblue')
+
+    # Highlight the top 5 highest QED values
+    top5 = df.head(5)
+    for i, idx in enumerate(top5.index):
+        bars[idx].set_color('orange')
+        plt.text(idx, top5['QED'].iloc[i] + 0.01, f'Top {i + 1}', ha='center', color='orange')
+
+    # Set the labels and title
+    plt.xlabel('ID')
+    plt.ylabel('QED Value')
+    plt.title('QED Values of Molecules')
+
+    # Set x-axis ticks
+    plt.xticks(ticks=range(0, len(df), 5), labels=range(1, len(df) + 1, 5))
+
+    # Save the plot
+    plt.savefig(output_file)
+
+
 def calculate_validity(smiles_list):
     valid_molecules = [Chem.MolFromSmiles(smiles) for smiles in smiles_list if Chem.MolFromSmiles(smiles) is not None]
     validity = len(valid_molecules) / len(smiles_list)
@@ -197,8 +230,12 @@ def main(input_file1, input_file2, output_dir):
     data2['QED'] = qed_scores
 
     # Save data2 with QED scores to a new file
-    qed_output_file = os.path.join(output_dir, f"new_molecules_with_qed_{reduction_method}.csv")
+    qed_output_file = os.path.join(output_dir, f"new_molecules_with_qed.csv")
     data2.to_csv(qed_output_file, index=False)
+
+    #plot QED
+    out_path_plot = os.path.join(output_dir, f"new_molecules_qed.png")
+    plot_qed_values(qed_output_file,out_path_plot)
 
 if __name__ == "__main__":
     args = cli()

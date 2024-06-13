@@ -42,7 +42,7 @@ def cli()-> argparse.Namespace:
     parser.add_argument("--output", required=True, help="Path to output file .txt" )
     parser.add_argument("--num_molecules", required=True, help="Number of wanted molecules")
     parser.add_argument("--pred_limit", required=True, help="Lower limit predictor value desired")
-    parser.add_argument("--num_threads", required=True, help="Number of threads to use")
+    #parser.add_argument("--num_threads", required=True, help="Number of threads to use")
     return parser.parse_args()
 
 # Define the reaction SMARTS pattern
@@ -535,10 +535,8 @@ def gen_molecule(predictor_model) -> Molecule:
 
     return mol
 
-def gen_valid_molecule(predictor_model, pred_limit: float) -> Molecule:
-    """
-    Generates a valid molecule with pred_value >= pred_limit.
-    """
+def gen_valid_molecule(args) -> Molecule:
+    predictor_model, pred_limit = args
     while True:
         mol = gen_molecule(predictor_model)
         if mol.pred_value >= pred_limit:
@@ -552,7 +550,6 @@ def main() -> None:
     output_file = args.output
     num_wanted = int(args.num_molecules)
     pred_limit = float(args.pred_limit)
-    num_threads = int(args.num_threads)
 
     # Turn off RDKit and Python warnings
     Chem.rdBase.DisableLog("rdApp.error")
@@ -562,9 +559,20 @@ def main() -> None:
     start_time = time.time()
 
     # Use multiprocessing to generate valid molecules
+    start_time = time.time()
+
+    jobs = [(predictor_model, pred_limit) for _ in range(num_wanted)]
+    num_threads = min(mp.cpu_count() - 2, 14)
+
+    results = []
     with mp.Pool(processes=num_threads) as pool:
-        jobs = [pool.apply_async(gen_valid_molecule, (predictor_model, pred_limit)) for _ in range(num_wanted)]
-        results = [job.get() for job in jobs]
+        for result in pool.imap_unordered(gen_valid_molecule, jobs):
+            results.append(result)
+
+
+    #with mp.Pool(processes=num_threads) as pool:
+    #    jobs = [pool.apply_async(gen_valid_molecule, (predictor_model, pred_limit)) for _ in range(num_wanted)]
+    #    results = [job.get() for job in jobs]
 
     # Write the results to the output file
     with open(output_file, 'w') as generated_molecules:
