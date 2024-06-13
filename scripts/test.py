@@ -1,5 +1,4 @@
 import argparse
-import math
 import os
 from sklearn.decomposition import PCA
 from sklearn.manifold import MDS, TSNE
@@ -44,22 +43,6 @@ def perform_dimensionality_reduction(data, method):
     reduced_data = dim_red.fit_transform(data)
     return reduced_data
 
-def perform_dimensionality_reduction(data, method):
-    if method == "PCA":
-        dim_red = PCA(n_components=2)
-    elif method == "MDS":
-        dim_red = MDS(n_components=2, random_state=42)
-    elif method == "t-SNE":
-        dim_red = TSNE(n_components=2, random_state=42)
-    elif method == "UMAP":
-        dim_red = umap.UMAP(n_components=2)
-    else:
-        raise ValueError("Invalid dimensionality reduction method.")
-
-    reduced_data = dim_red.fit_transform(data)
-    return reduced_data
-
-
 def calculate_qed(smiles_list):
     qed_scores = []
     for smiles in smiles_list:
@@ -94,17 +77,8 @@ def plot_qed_values(csv_file, output_file, top_n=10):
     plt.ylabel('QED Value')
     plt.title(f'QED Values of Molecules')
 
-    # Calculate the number of ticks needed to cover the range from 1 to len(df)
-    num_ticks = math.ceil(len(df) / 10) + 1
-
-    # Set x-axis ticks to 1, 10, 20, 30, ..., 200
-    tick_positions = [i * 10 for i in range(num_ticks)]
-    plt.xticks(ticks=tick_positions, labels=[i * 10 + 1 for i in range(num_ticks)])
-
-    # Add a manual tick for 200 if it's not included
-    if tick_positions[-1] != len(df) - 1:
-        plt.xticks(ticks=tick_positions + [len(df) - 1],
-                   labels=[i * 10 + 1 for i in range(num_ticks)] + [len(df)])
+    # Set x-axis ticks to 1, 5, 10, 15, 20...
+    plt.xticks(ticks=range(0, len(df), 10), labels=range(1, len(df) + 1, 10))
 
     # Save the plot
     plt.savefig(output_file)
