@@ -83,7 +83,6 @@ def calculate_qed(smiles_list):
             qed_scores.append(None)
     return qed_scores
 
-
 def plot_qed_values(csv_file, output_file, top_n=10):
     # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file)
@@ -95,19 +94,20 @@ def plot_qed_values(csv_file, output_file, top_n=10):
     plt.figure(figsize=(12, 6))
     bars = plt.bar(df.index, df['QED'], color='skyblue')
 
-    # Highlight the top N highest QED values
+    # Get the top N molecules
     top_n_df = df.head(top_n)
-    for i, idx in enumerate(top_n_df.index):
-        bars[idx].set_color('orange')
-        plt.text(idx, top_n_df['QED'].iloc[i] + 0.01, f'Top {i + 1}', ha='center', color='orange')
+
+    # Print molecule IDs over each bar for the top N molecules
+    for i, (idx, qed) in enumerate(zip(top_n_df.index, top_n_df['QED'])):
+        plt.text(idx, qed, str(df['ID'][idx]), ha='center', va='bottom', fontsize=8)
 
     # Set the labels and title
-    plt.xlabel('ID')
+    plt.xlabel('Molecule ID')
     plt.ylabel('QED Value')
-    plt.title('QED Values of Molecules')
+    plt.title(f'QED Values of Molecules')
 
     # Set x-axis ticks to 1, 5, 10, 15, 20...
-    plt.xticks(ticks=range(0, len(df), 5), labels=range(1, len(df) + 1, 4))
+    plt.xticks(ticks=range(0, len(df), 10), labels=range(1, len(df) + 1, 10))
 
     # Save the plot
     plt.savefig(output_file)
