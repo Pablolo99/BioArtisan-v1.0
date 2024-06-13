@@ -56,7 +56,6 @@ def calculate_qed(smiles_list):
     return qed_scores
 
 
-
 def plot_qed_values(csv_file, output_file):
     # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file)
