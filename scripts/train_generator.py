@@ -612,16 +612,20 @@ def main() -> None:
         generated_molecules.write("ID\tSMILES\tpred_value\n")
 
     num_mols = 0
+    gen_smiles = []
 
     while num_mols < num_wanted:
         mol = gen_molecule(predictor_model)
         if mol.pred_value >= pred_limit:
             #write info in tsv format
             with open(output_file, 'a') as generated_molecules:
-                generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
-                if num_mols < num_wanted:
-                    generated_molecules.write('\n')
-            num_mols += 1
+                if mol.SMILES not in gen_smiles:
+                    gen_smiles.append(mol.SMILES)
+                    num_mols += 1
+                    generated_molecules.write(f"{num_mols + 1}\t{mol.SMILES}\t{mol.pred_value}")
+                    if num_mols < num_wanted:
+                        generated_molecules.write('\n')
+
 
     end_time = time.time()
     execution_time = end_time - start_time

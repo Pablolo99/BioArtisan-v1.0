@@ -43,6 +43,35 @@ def perform_dimensionality_reduction(data, method):
     reduced_data = dim_red.fit_transform(data)
     return reduced_data
 
+
+def calculate_qed(smiles_list):
+    qed_scores = []
+    for smiles in smiles_list:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is not None:
+            qed_score = QED.qed(mol)
+            qed_scores.append(qed_score)
+        else:
+            qed_scores.append(None)
+    return qed_scores
+
+
+def perform_dimensionality_reduction(data, method):
+    if method == "PCA":
+        dim_red = PCA(n_components=2)
+    elif method == "MDS":
+        dim_red = MDS(n_components=2, random_state=42)
+    elif method == "t-SNE":
+        dim_red = TSNE(n_components=2, random_state=42)
+    elif method == "UMAP":
+        dim_red = umap.UMAP(n_components=2)
+    else:
+        raise ValueError("Invalid dimensionality reduction method.")
+
+    reduced_data = dim_red.fit_transform(data)
+    return reduced_data
+
+
 def calculate_qed(smiles_list):
     qed_scores = []
     for smiles in smiles_list:
@@ -77,8 +106,9 @@ def plot_qed_values(csv_file, output_file, top_n=10):
     plt.ylabel('QED Value')
     plt.title(f'QED Values of Molecules')
 
-    # Set x-axis ticks to 1, 5, 10, 15, 20...
-    plt.xticks(ticks=range(0, len(df), 10), labels=range(1, len(df) + 1, 10))
+    # Set x-axis ticks
+    ticks_positions = list(1,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200)
+    plt.xticks(ticks=ticks_positions, labels=ticks_positions)
 
     # Save the plot
     plt.savefig(output_file)
@@ -132,26 +162,26 @@ def main(input_file1, input_file2, output_dir):
     molecules1_non_antibacterial = [Chem.MolFromSmiles(smiles) for smiles in smiles_list1_non_antibacterial]
     molecules2 = [Chem.MolFromSmiles(smiles) for smiles in smiles_list2]
 
-    fingerprints1_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in
+    fingerprints1_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in
                                    molecules1_antibacterial]
-    fingerprints1_non_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in
+    fingerprints1_non_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in
                                        molecules1_non_antibacterial]
-    fingerprints2 = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in molecules2]
+    fingerprints2 = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in molecules2]
 
     # Convert fingerprints to array
-    fp_array1_antibacterial = np.zeros((len(fingerprints1_antibacterial), 1024))
+    fp_array1_antibacterial = np.zeros((len(fingerprints1_antibacterial), 2048))
     for i, fp in enumerate(fingerprints1_antibacterial):
         arr = np.zeros((1,))
         AllChem.DataStructs.ConvertToNumpyArray(fp, arr)
         fp_array1_antibacterial[i] = arr
 
-    fp_array1_non_antibacterial = np.zeros((len(fingerprints1_non_antibacterial), 1024))
+    fp_array1_non_antibacterial = np.zeros((len(fingerprints1_non_antibacterial), 2048))
     for i, fp in enumerate(fingerprints1_non_antibacterial):
         arr = np.zeros((1,))
         AllChem.DataStructs.ConvertToNumpyArray(fp, arr)
         fp_array1_non_antibacterial[i] = arr
 
-    fp_array2 = np.zeros((len(fingerprints2), 1024))
+    fp_array2 = np.zeros((len(fingerprints2), 2048))
     for i, fp in enumerate(fingerprints2):
         arr = np.zeros((1,))
         AllChem.DataStructs.ConvertToNumpyArray(fp, arr)
