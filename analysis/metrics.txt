@@ -1,5 +1,5 @@
 Validity of New Molecules: 1.00
-Uniqueness of New Molecules: 0.98
+Uniqueness of New Molecules: 1.00
 Novelty of New Molecules: 1.00
-KL Divergence (Antibacterial): 0.0000005714
-KL Divergence (Non-Antibacterial): 0.0006841744
+KL Divergence (Antibacterial): 0.0000006487
+KL Divergence (Non-Antibacterial): 0.0006816782
