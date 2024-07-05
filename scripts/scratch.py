@@ -135,26 +135,26 @@ def main(input_file1, input_file2, output_dir):
     molecules1_non_antibacterial = [Chem.MolFromSmiles(smiles) for smiles in smiles_list1_non_antibacterial]
     molecules2 = [Chem.MolFromSmiles(smiles) for smiles in smiles_list2]
 
-    fingerprints1_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in
+    fingerprints1_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in
                                    molecules1_antibacterial]
-    fingerprints1_non_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in
+    fingerprints1_non_antibacterial = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in
                                        molecules1_non_antibacterial]
-    fingerprints2 = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in molecules2]
+    fingerprints2 = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in molecules2]
 
     # Convert fingerprints to array
-    fp_array1_antibacterial = np.zeros((len(fingerprints1_antibacterial), 1024))
+    fp_array1_antibacterial = np.zeros((len(fingerprints1_antibacterial), 2048))
     for i, fp in enumerate(fingerprints1_antibacterial):
         arr = np.zeros((1,))
         AllChem.DataStructs.ConvertToNumpyArray(fp, arr)
         fp_array1_antibacterial[i] = arr
 
-    fp_array1_non_antibacterial = np.zeros((len(fingerprints1_non_antibacterial), 1024))
+    fp_array1_non_antibacterial = np.zeros((len(fingerprints1_non_antibacterial), 2048))
     for i, fp in enumerate(fingerprints1_non_antibacterial):
         arr = np.zeros((1,))
         AllChem.DataStructs.ConvertToNumpyArray(fp, arr)
         fp_array1_non_antibacterial[i] = arr
 
-    fp_array2 = np.zeros((len(fingerprints2), 1024))
+    fp_array2 = np.zeros((len(fingerprints2), 2048))
     for i, fp in enumerate(fingerprints2):
         arr = np.zeros((1,))
         AllChem.DataStructs.ConvertToNumpyArray(fp, arr)

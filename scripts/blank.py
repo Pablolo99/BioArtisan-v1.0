@@ -1,29 +1,34 @@
-# Read the file and find duplicate SMILES strings
-file_path = 'C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/data/output_PKtest_200'
+import pandas as pd
 
-# Dictionary to store SMILES and their corresponding line numbers
-smiles_dict = {}
+# Leer el archivo CSV original
+archivo_original = "C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/clustering/PK_const/cluster_info_ConstrainedKMeans.csv"  # Reemplaza con la ruta a tu archivo
+df = pd.read_csv(archivo_original)
 
-with open(file_path, 'r') as file:
-    header = file.readline()  # Read the header line
-    lines = file.readlines()  # Read the rest of the lines
+# Crear una lista de diccionarios para almacenar las nuevas filas
+nueva_lista = []
 
-    # Process each line to find duplicates
-    for index, line in enumerate(lines, start=2):  # Start from 2 to account for the header line
-        columns = line.strip().split('\t')
-        if len(columns) < 3:
-            continue
-        smiles = columns[1]
+# Iterar sobre las filas del DataFrame original
+for index, row in df.iterrows():
+    # Obtener los valores necesarios
+    smiles_id = row['mol_id']
+    smiles = row['smiles']
+    group_id = row['cluster']
 
-        if smiles in smiles_dict:
-            smiles_dict[smiles].append(index)
-        else:
-            smiles_dict[smiles] = [index]
+    # Crear un diccionario con el formato deseado
+    nueva_fila = {
+        'smiles_id': smiles_id,
+        'group_id': group_id,
+        'smiles': smiles
+    }
 
-# Print lines with duplicate SMILES
-print("Lines with duplicate SMILES strings:")
-for smiles, line_numbers in smiles_dict.items():
-    if len(line_numbers) > 1:
-        print(f"SMILES: {smiles}")
-        for line_number in line_numbers:
-            print(f"  Line {line_number}: {lines[line_number-2].strip()}")
+    # Añadir el diccionario a la lista
+    nueva_lista.append(nueva_fila)
+
+# Crear un nuevo DataFrame con las nuevas filas
+nuevo_df = pd.DataFrame(nueva_lista)
+
+# Guardar el nuevo DataFrame en un archivo CSV
+nuevo_archivo_csv = "C:/Users/pablo/PycharmProjects/BioArtisan-v1.0/clustering/PK_const/cluster_info_ConstrainedKMeans_clean.csv"  # Nombre del nuevo archivo
+nuevo_df.to_csv(nuevo_archivo_csv, index=False)
+
+print(f"Archivo guardado en {nuevo_archivo_csv}")

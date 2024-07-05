@@ -86,7 +86,7 @@ def main(input_file, output_dir, n_clusters, size_min):
     # Extract data
     smiles_list = data['smiles'].tolist()
     molecules = [Chem.MolFromSmiles(smiles) for smiles in smiles_list]
-    fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024) for mol in molecules]
+    fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048) for mol in molecules]
 
     # Convert fingerprints to array
     fp_array = np.zeros((len(fingerprints), 1024))
